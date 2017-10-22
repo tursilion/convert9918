@@ -1,0 +1,293 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United States) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 9, 1\r\n"
+    "#pragma code_page(1252)\r\n"
+    "#endif //_WIN32\r\n"
+    "#include ""res\\TIPicView.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""afxres.rc""         // Standard components\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON                    "res\\TIPicView.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOGEX 0, 0, 235, 55
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Convert9918 by Mike Brent aka Tursi"
+FONT 8, "MS Sans Serif", 0, 0, 0x0
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,11,17,20,20
+    LTEXT           "Convert9918 Version 167",IDC_STATIC,40,10,119,8,SS_NOPREFIX
+    LTEXT           "Copyright (C) 2017 MIke Brent/HarmlessLion.com",IDC_STATIC,40,25,188,8
+    DEFPUSHBUTTON   "OK",IDOK,178,7,50,14,WS_GROUP
+END
+
+IDD_TIPICVIEW_DIALOG DIALOGEX 0, 0, 530, 282
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_ACCEPTFILES | WS_EX_APPWINDOW
+CAPTION "Classic Pic Adapt - 9918A - Drag and drop your image file"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    PUSHBUTTON      "&Open",IDC_RND,428,247,46,14
+    PUSHBUTTON      "S&ave Pic",IDC_BUTTON4,473,247,50,14
+    CONTROL         "Show Palette",IDC_PALETTE,"Button",BS_AUTOCHECKBOX | BS_PUSHLIKE | WS_TABSTOP,427,261,96,14
+    EDITTEXT        IDC_EDIT1,57,18,19,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT6,80,18,19,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT4,9,36,19,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT3,33,36,19,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT2,57,36,19,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT5,33,53,19,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Atkinson",IDC_DISTDEFAULT2,82,33,50,10
+    PUSHBUTTON      "&Floyd-Stein",IDC_DISTDEFAULT,82,42,50,10
+    PUSHBUTTON      "&Pattern",IDC_PATTERN,82,52,50,10
+    CONTROL         "&Order1",IDC_ORDERED,"Button",BS_AUTOCHECKBOX | BS_PUSHLIKE | WS_TABSTOP,82,62,25,10
+    CONTROL         "Order&2",IDC_ORDERED2,"Button",BS_AUTOCHECKBOX | BS_PUSHLIKE | WS_TABSTOP,107,62,25,10
+    PUSHBUTTON      "&None",IDC_NODITHER,82,72,50,10
+    COMBOBOX        IDC_ERRMODE,7,78,69,76,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_PERPR,16,103,23,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_PERPG,50,103,23,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_PERPB,83,103,23,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "&Default",IDC_PERPRESET,37,117,50,14
+    EDITTEXT        IDC_LUMA,63,134,40,14,ES_AUTOHSCROLL
+    COMBOBOX        IDC_PORTRAIT,72,184,55,76,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_FILTER,7,184,55,66,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_COLDIFF,86,202,25,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MAXDIFF,86,217,25,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_STATICCNT,111,233,20,14,ES_AUTOHSCROLL
+    CONTROL         "Median Cut",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,7,261,52,10
+    CONTROL         "Popularity",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,62,261,48,10
+    PUSHBUTTON      "&Right",IDC_BUTTON1,176,247,23,14
+    PUSHBUTTON      "&Left",IDC_BUTTON2,199,247,23,14
+    PUSHBUTTON      "&Up",IDC_BUTTON3,222,247,23,14
+    PUSHBUTTON      "&Down",IDC_BUTTON5,245,247,23,14
+    CONTROL         "&Hist",IDC_CHECK1,"Button",BS_AUTOCHECKBOX | BS_PUSHLIKE | WS_TABSTOP,299,247,23,14
+    CONTROL         "&Perc",IDC_PERCEPT,"Button",BS_AUTOCHECKBOX | BS_PUSHLIKE | WS_TABSTOP,322,247,23,14
+    COMBOBOX        IDC_COMBO1,176,263,169,95,CBS_DROPDOWNLIST | CBS_NOINTEGRALHEIGHT | WS_TABSTOP
+    PUSHBUTTON      "Reload",IDC_RELOAD,363,254,50,14
+    LTEXT           "PIX",IDC_STATIC,37,19,12,8
+    LTEXT           "Scaling filter",IDC_STATIC,9,175,40,8
+    LTEXT           "Fill Mode",IDC_STATIC,74,176,28,8
+    LTEXT           "Error Mode",IDC_STATIC,9,69,36,8
+    LTEXT           "%",IDC_STATIC,119,220,8,8
+    LTEXT           "Flicker Max. Difference",IDC_STATIC,7,220,75,8
+    LTEXT           "Error Distribution (/16)",IDC_STATIC,7,6,73,8
+    LTEXT           "Perceptual Ratio:",IDC_STATIC,7,92,56,8
+    LTEXT           "G",IDC_STATIC,42,106,8,8
+    LTEXT           "B",IDC_STATIC,75,106,8,8
+    LTEXT           "Per-Scanline Static Color Count:",IDC_STATIC,7,235,103,8
+    LTEXT           "Static Color Selection Mode:",IDC_STATIC,7,250,90,8
+    LTEXT           "(0-14)",IDC_STATIC,135,235,21,8
+    LTEXT           "R",IDC_STATIC,8,106,8,8
+    LTEXT           "%",IDC_STATIC,119,205,8,8
+    LTEXT           "Max Color Shift",IDC_STATIC,7,205,75,8
+    LTEXT           "Luma Emphasis:",IDC_STATIC,9,136,52,8
+    LTEXT           "%",IDC_STATIC,105,137,8,8
+    EDITTEXT        IDC_GAMMA,64,152,40,14,ES_AUTOHSCROLL
+    LTEXT           "Gamma Correct",IDC_STATIC,10,154,50,8
+    CONTROL         "",IDC_ORDERSLIDE,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_DISABLED | WS_TABSTOP,81,85,51,11
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,6,6,0
+ PRODUCTVERSION 1,6,6,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName", "harmlesslion.com"
+            VALUE "FileDescription", "TMS9918A converter"
+            VALUE "FileVersion", "1.6.6.0"
+            VALUE "InternalName", "TIPicView"
+            VALUE "LegalCopyright", "Copyright (C) 2016 Mike Brent"
+            VALUE "OriginalFilename", "Convert9918.exe"
+            VALUE "ProductName", "Convert9918"
+            VALUE "ProductVersion", "1.6.6.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 228
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 48
+    END
+
+    IDD_TIPICVIEW_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 523
+        TOPMARGIN, 6
+        BOTTOMMARGIN, 275
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog Info
+//
+
+IDD_TIPICVIEW_DIALOG DLGINIT
+BEGIN
+    IDC_ERRMODE, 0x403, 8, 0
+0x7641, 0x7265, 0x6761, 0x0065, 
+    IDC_ERRMODE, 0x403, 11, 0
+0x6341, 0x7563, 0x756d, 0x616c, 0x6574, "\000" 
+    IDC_PORTRAIT, 0x403, 8, 0
+0x6544, 0x6166, 0x6c75, 0x0074, 
+    IDC_PORTRAIT, 0x403, 9, 0
+0x6f54, 0x2f70, 0x654c, 0x7466, "\000" 
+    IDC_PORTRAIT, 0x403, 7, 0
+0x694d, 0x6464, 0x656c, "\000" 
+    IDC_PORTRAIT, 0x403, 13, 0
+0x6f42, 0x7474, 0x6d6f, 0x522f, 0x6769, 0x7468, "\000" 
+    IDC_FILTER, 0x403, 4, 0
+0x6f42, 0x0078, 
+    IDC_FILTER, 0x403, 9, 0
+0x6147, 0x7375, 0x6973, 0x6e61, "\000" 
+    IDC_FILTER, 0x403, 8, 0
+0x6148, 0x6d6d, 0x6e69, 0x0067, 
+    IDC_FILTER, 0x403, 9, 0
+0x6c42, 0x6361, 0x6d6b, 0x6e61, "\000" 
+    IDC_FILTER, 0x403, 9, 0
+0x6942, 0x696c, 0x656e, 0x7261, "\000" 
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// ROM
+//
+
+IDR_COLECOROM           ROM                     "blank.rom"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+    IDS_ABOUTBOX            "&About TIPicView..."
+END
+
+#endif    // English (United States) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE 9, 1
+#pragma code_page(1252)
+#endif //_WIN32
+#include "res\TIPicView.rc2"  // non-Microsoft Visual C++ edited resources
+#include "afxres.rc"         // Standard components
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

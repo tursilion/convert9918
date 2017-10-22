@@ -1,0 +1,153 @@
+* Per scanline palette code for the F18A GPU
+* by Tursi - free for any use. Go nuts.
+* Proven to work version.
+
+* 0000-17FF = Pattern table
+* 1800-1AFF = Screen Image Table (0-255 repeated 3 times)
+* 1B00-1B1F = Sprite Attribute List (just contains D0 00 to terminate the sprite list *)
+* 1B20-1DFF = program code to display the screen (won't need that much! Rest can be sprites)
+* 1DFE-1FFF = First 0.5k of packed per scanline palette table (actually 2 bytes more for easier math)
+* 2000-37FF = Color table
+* 3800-47FF = Palette Per Scanline table (there's only 4k here! not 6k! Packed palette is 4.5k!)
+
+	DEF COPY,RUN
+
+* Start at free VDP space
+	AORG >1B20
+	
+* COPY: Packs and Moves the palette into high memory
+* Usage: copy your 6k unpacked palette data at >0000, then start the
+* GPU at this address. Remember to unlock the F18A first.
+* To simplify the packing/unpacking, we turn 0A BB 0C DD into AC BB DD
+* this loop doesn't need to be overly fast
+COPY
+	CLR R0			* copy from
+	LI R1,>1DFE		* copy to
+	LI R2,171		* num bytes / 4 (first loop - 512 output bytes - 171 loops * 3 bytes = 513 bytes)
+	BL @CPLP
+	
+	LI R1,>3800		* second part (4k)
+	LI R2,1365		* num bytes / 4 (1365*3 bytes = 4095 - the one extra byte is in the first table)
+	BL @CPLP
+	JMP RUN			* jump over the copy loop to go idle at the run block
+
+* output is 0A BB 0C DD -> AC DD BB
+CPLP				
+	MOV *R0+,R3		* copy word 0A BB
+	MOV *R0+,R4		* copy word 0C DD
+	MOV R3,R5		* setup work register
+	SLA R5,4		* Shift up 'A'
+	ANDI R5,>F000	* mask
+	SOCB R4,R5		* get 'C'
+	MOVB R5,*R1+	* output 'AC'
+	SWPB R3			* prepare 'BB'
+	MOVB R3,*R1+
+	SWPB R4			* prepare 'DD'
+	MOVB R4,*R1+
+	
+	DEC R2			* count down
+	JNE CPLP		* continue till finished
+	B *R11			* return
+	
+RUN
+	IDLE			* go back to sleep - CPU must wake up us again
+	
+* This is the actual per-scanline loop code. We have very little time - 32uS - to get
+* a palette up. Luckily we can write 16-bits at a time to the registers, and we have 
+* just 15 registers to set. Unluckily, we have to unpack the data and it's split in memory. 	
+
+* init some registers
+	CLR R5			* just make sure the LSB is blank
+	LI R6,>1FFF		* end of first block (unused byte)
+	LI R7,>47FF		* end of second block (unused byte)
+	LI R8,>1DFE		* start of first block
+	LI R9,>3800		* start of second block
+	LI R10,>5000	* address of palette table
+	LI R12,>F000	* a mask ('A')
+	LI R13,>FF00	* compare value for scanline 255
+	LI R14,>7000	* address of scanline index
+
+* wait for an end of frame - this lets us get synchronized and helps us avoid MPY in the loop
+* We have about 70 TI scanlines through vblank, lots of time for per-frame init (we don't have much)
+* Just to make my life simple, we treat 255 as the end, which is repeated for about 7 TI scanlines
+* Even that will be plenty of time.
+
+* for each actual line, the line buffer at >7000 will change BEFORE the line is buffered. The HSYNC
+* blanking bit is then set when that line has been emitted (fully)
+
+* rather than be overly worried about timing or racing the hsync, we will use Matthew's excellent
+* suggestion to double buffer the palette - after all, we have 4 to choose frome!
+* The first palette runs from >5000->501F
+* Second palette runs from    >5020->503F
+*
+* The palette selection register does not need to be timed because the selected palette is part of
+* the line buffer - the full 6-bit color is buffered. Yay!
+
+RUNLP
+	CB R13,*R14		* check whether we are on line 255 yet (it repeats through line 262)
+	JNE RUNLP
+	
+* This is what we were waiting for, so do beginning of frame processing (not much here)
+	MOV R8,R4		* reset current palette table address
+
+* first table portion - we at least guarantee every palette entry is complete in a bank
+* We have to read bytes because it may be misaligned
+SCANW1
+* wait for blanking bit at >7001 before we change any registers
+	MOV *R14,R5		* gets scanline and blanking bit
+	COC @BLANK,R5	* this will match immediately during vblank, that's okay :)
+	JNE SCANW1
+
+* Do the palette update work at the end of the line
+	XOR @PALOFF,R10 * Next palette register offset
+	COC @PALOFF,R10	* test the result equal to 5020? (too bad it wasn't 0/not 0)
+	JEQ PAL2		* palette 2 is set
+	CLR R0			* Palette 1 (sets sprites as well)
+	JMP PALCOM
+PAL2
+	LI R0,>0100		* second palette
+PALCOM
+	MOVB R0,@>6018	* VDP register >18
+	
+* and now get to work
+	LI R3,8			* 16 entries to copy / 2
+	MOV R10,R15		* palette table address
+	
+SCANL1
+	MOVB *R4+,R0	* 'Ac'
+	MOVB *R4+,R1	* 'BB'
+	MOVB *R4+,R2	* 'DD'
+	SWPB R2			* 00DD
+	MOVB R0,R2		* ACDD
+*	SZCB R12,R2		* 0CDD -- maybe we can drop this? F18A ignores the high nibble.
+	SWPB R1			* 00BB
+	SRL R0,4		* 0ACx
+	MOVB R0,R1		* 0ABB
+	MOV R1,*R15+	* write 0ABB	
+	MOV R2,*R15+	* write 0CDD
+	
+	C R4,R6			* check for first table finished
+	JNE FIRSTB
+	
+	MOV R9,R4		* yes, load second table
+	JMP NEXTCOL
+
+FIRSTB
+	C R4,R7			* check for second table finished (split into 2 loops could avoid the double test)
+	JHE RUNLP		* yes, wait for new frame
+
+NEXTCOL
+	DEC R3
+	JNE SCANL1		* loop around for more
+
+NEXTLIN
+	CB *R14,R5		* wait for the scanline to change
+	JNE SCANW1		* it changed, get to work immediately!
+	JMP NEXTLIN		* not changed, keep waiting
+
+PALOFF
+	DATA >0020		* XORd value for the alternate palette address
+BLANK
+	DATA >0001		* value of the blank bit (note it's always set in vblank)
+	END
+

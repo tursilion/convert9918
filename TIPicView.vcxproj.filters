@@ -1,0 +1,120 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{20b62df4-539c-4038-b2fc-2c70f24f61cf}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{204c1d5c-bcd7-4c3d-8985-b65e2859f36e}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{119c8ac6-71fb-42ce-a973-634f6b12c998}</UniqueIdentifier>
+      <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
+    </Filter>
+    <Filter Include="ExampleCode">
+      <UniqueIdentifier>{d6b60094-1b05-4e3f-bc18-c392f7ffada1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="readgif.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StdAfx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TIPicView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TIPicViewDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="median_cut.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="quantize_new.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="TIPicView.rc">
+      <Filter>Source Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="xbtest.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="2passscale.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="filters.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StdAfx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TIPicView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TIPicViewDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="median_cut.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="quantize_common.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\TIPicView.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\TIPicView.rc2">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="ReadMe.txt" />
+    <None Include="blank.rom">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\colecobitmap.c.txt">
+      <Filter>ExampleCode</Filter>
+    </None>
+    <None Include="examples\dualmulticolor.a99.txt">
+      <Filter>ExampleCode</Filter>
+    </None>
+    <None Include="examples\F18PerScanline9900Side.a99.txt">
+      <Filter>ExampleCode</Filter>
+    </None>
+    <None Include="examples\F18PerScanlineGPUSide.a99.txt">
+      <Filter>ExampleCode</Filter>
+    </None>
+    <None Include="examples\multicolor.a99.txt">
+      <Filter>ExampleCode</Filter>
+    </None>
+    <None Include="examples\XB_Bitmap.a99.txt">
+      <Filter>ExampleCode</Filter>
+    </None>
+    <None Include="examples\XB_Bitmap_Notes.txt">
+      <Filter>ExampleCode</Filter>
+    </None>
+    <None Include="examples\XB_Program.txt">
+      <Filter>ExampleCode</Filter>
+    </None>
+    <None Include="examples\HalfMult.a99.txt">
+      <Filter>ExampleCode</Filter>
+    </None>
+    <None Include="examples\F18FixedPalette.a99">
+      <Filter>ExampleCode</Filter>
+    </None>
+    <None Include="ImgSource.txt" />
+  </ItemGroup>
+</Project>

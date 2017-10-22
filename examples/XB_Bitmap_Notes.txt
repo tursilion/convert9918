@@ -1,0 +1,261 @@
+--------------------------------------------------
+This file describes the Extended BASIC output mode
+--------------------------------------------------
+
+What does it do?
+----------------
+
+This is an Extended BASIC program with integrated assembly language and data 
+that displays a bitmap screen, waits for the user to press Enter, then 
+returns to Extended BASIC.
+
+
+How do I use it?
+----------------
+
+The program file is generated from Convert9918 as a TIFILES standard file 
+type. You can XMODEM this program to a real TI, or use Ti99Dir to copy it 
+onto a disk image.
+
+It loads and runs like any other Extended BASIC program.
+
+
+How do I change it?
+-------------------
+
+This program messes with several of the system pointers in order to load and
+save larger than it really it. It seems to be okay to make small changes to it
+and save it again, but keep a backup and test often - sometimes it seems to 
+get corrupted.
+
+Only change code from line 200 onwards. For instance, you might want to change 
+the background color in the CALL SCREEN to something more appropriate for your 
+image. The CALL LINK("SHOW") does the actual display and waits for the user to 
+press Enter before returning.
+
+After a return, VDP RAM is a mess. You should always CALL CLEAR, and rather than 
+add more code here, you should chain to your next program with RUN "DSK1.xxxx" 
+(where 'xxxx' is your program).
+
+The next program should always start with CALL CHARSET, otherwise all your 
+character definitions will be corrupted.
+
+
+How does it work??
+------------------
+
+This information was hard to come by, so it's worth documenting again. Extended 
+BASIC builds a program starting at the top of memory. There are two pointers it 
+uses during this, one points to the start of the line number table, the other 
+to the end of the line number table.
+
+When a new line is added, the line number table is shifted downwards in memory 
+(this is why a large program starts to slow down when you add new lines). It 
+puts the line building downwards from the start of the line number table pointer, 
+then updates both pointers to the new table.
+
+However, when Extended BASIC saves program code, it saves till the top of RAM 
+no matter what the pointers say. Of course all this is only true for code in 
+the 32k RAM.
+
+This trick takes advantage of this behaviour by pushing the start and end points 
+of the line number table lower in RAM. The program will then build downwards 
+from that point, and SAVE and OLD will preserve all data right to the top 
+automatically.
+
+So first you have to start with NEW, because there must be no data in memory 
+(otherwise updating the pointers without moving it will lose the program). The 
+pointers are at >8330 and >8332 - just set them to just below the new top of 
+memory -- although 1 byte lower is sufficient it's better to keep things aligned 
+on even bytes, so I use two bytes lower. You can use CALL INIT/CALL LOAD to set 
+these pointers, but in Classic99 I just use the debugger.
+
+For this program, I set a value of >C9E4. This gives me 6k for the pattern 
+table at >C9E6, 6k for the color table at >E1E6, 1k for saving VDP data at 
+>F9E6, and 512 bytes for the program itself at >FDE6.
+
+Next, enter the program. You can MERGE it, type it, or with Classic99 I just 
+paste it in from Notepad. 
+
+To get the assembly into place, just CALL INIT::CALL LOAD("DSK1.ASM/O"). Because 
+the assembly program is AORG'd, it loads into the correct place. Naturally you 
+are responsible for making sure that space is free!
+
+SAVE DSK1.PROGRAM -- and now you have an Extended BASIC program with space for 
+almost 14k of data at the top, all loading in one fast loader with the assembly 
+language in place.
+
+Note that when you SAVE a program less than about 12k, XB will convert it into
+a PROGRAM image file. My testing so far suggests that this will still work
+correctly. This will only happen for RLE compressed images.
+
+Getting the image data in is trickier, this is why I put the code into Convert9918. 
+You can use an external program to inject the data into the records once you find 
+the correct points. To assist with this when I was testing it, I used the debugger 
+to set the important addresses to a tag value I could search the resulting program 
+file for (you could also use CALL LOAD). A file this large saves and loads as 
+Dis/Var254 so even an Extended BASIC program could access the records.
+
+It gets even trickier if you want to use RLE compression, which my loader supports. 
+For this numerous offsets need to be recalculated. Convert9918 hacks the binary at
+the appropriate spots for this, or you could go through the above steps manually 
+for smaller data sizes, and change the assembly program.
+
+I don't intend to go into great detail about how the relocation works, except
+that the header information took time to reverse so it is work documenting here.
+This only covers the DIS/VAR254 format - the PROGRAM image format is slightly
+different.
+
+The first record is 10 bytes long, and contains these 5 words:
+0	Always >ABCD (identification tag?)
+1	Start address of line number table (value from >8330)
+2	End address of line number table (value from >8332)
+3	XOR of start and end addresses of line number table (used for sanity checking)
+4	Top of RAM (from >8384?)
+
+The rest of the sector is empty, since there wouldn't be room for a full record.
+
+The first program record is 254 bytes long (assuming the program is at least), and
+starts with the line number table. The line number table is all that needs to be
+modified to relocation the program, and is a list of entries 4 bytes per line. 
+The first entry is the line number as two bytes, the second is the address of the 
+line as two bytes. The addresses in record 0 describe how far the table goes.
+
+The relocation code in Convert9918 also adjusts the size of the data and fixes
+up the pointers in the assembly code, as well as fixing the comment in the XB
+code, before saving it.
+
+
+Included Source Code
+--------------------
+
+To break down the XB program:
+
+100-130 are just warning comments. Normally I had no trouble making changes, 
+but occasionally something got corrupted. Just use caution, keep backups and 
+save often. Or better still, just chain to another program after displaying 
+the picture instead of putting it all here.
+
+140 does CALL INIT so the CALL LOADs will work.
+
+150 Adds an entry to the name table called "SHOW  " with an address of FDE6 - 
+which is where our assembly is loaded. This LOAD assumes that no other 
+assembly functions are loaded!
+
+160 Changes the address of the bottom of the name table to >3FF8, so that 
+CALL LINK can find our new entry. Again, it assumes that no other assembly 
+functions are loaded.
+
+165 Deletes all sprites to prevent sprite automotion from corrupting the image.
+
+170-190 are more paranoid warnings. :) Feel free to experiment though! 
+Just don't be shocked if it crashes.
+
+200 Sets the background color, as the assembly doesn't touch it. This may be 
+useful for making the border color match your picture, so change if you like.
+
+210 Displays the actual image, calling the assembly. The assembly code will 
+wait for the user to press Enter before returning.
+
+220 Clears the screen - VRAM is seriously messed up, so you should clear the 
+screen right away to avoid showing too much corruption. I recommend that you 
+also do a CALL CHARSET to reload the character set, but that can wait till 
+the next program launches.
+
+230 just notes that the next line should be replaced with a RUN command to 
+launch your new program. Doing this is safer than continuing after messing 
+around with the pointers -- but again, more power to you if it works!
+
+240 prints a message as a test instead of running a new program, 
+demonstrating that the interpreter is working. Replace this line with your
+RUN command.
+
+To break down the assembly:
+
+It first starts with some hard-coded equates to the the image, as well as 
+to the XB version of KSCAN.
+
+It then AORGs to the start address of FDE6, and the first instruction saves 
+the return address to the interpreter to the first word of the buffer.
+
+VWAD is a simple function to set the VDP address. By setting the bits 
+appropriately, it can set for read or write mode, or change VDP registers. 
+The first call in lines 17-18 set VDP Register 1 to >A0, which keeps 16k 
+mode but blanks the screen.
+
+Lines 21-22 set up and call a subroutine to copy specific blocks of VRAM 
+to the buffer, backing it up. This is DATAST, and FROMVR is a function it 
+uses to copy from VRAM to CPU RAM.
+
+Lines 25-26 set up and call a subroutine to set VDP registers in order to 
+set up bitmap mode and turn off sprites.
+
+Lines 29-41 set up a double-nested loop that writes 0-255 to the screen 
+image table three times, thus setting it up for normal bitmap images.
+
+Lines 48-55 set up and call the copy function for the pattern table, copying 
+from TIAP to >0000. LOADDIR directly loads data to VRAM, while LOADRLE 
+(not called in the source) unpacks an RLE table. Convert9918 patches this 
+branch for RLE mode.
+
+Likewise, lines 58-63 do the same for the color table, copying from TIAC 
+to >2000.
+
+Finally, likes 66-67 set VDP register 1 to >E2, which renables video and sets 
+bitmap mode.
+
+Lines 70-79 wait for the user to press Enter, enabling interrupts so that 
+FCTN-= works. Note that if sprite automotion is in use, this will probably 
+corrupt the picture since the sprite table is no longer where XB thinks 
+it should be.
+
+Lines 83-84 turn off the display again.
+
+Lines 87-88 set up and call the copy function to copy data saved in the 
+buffer back into VRAM.
+
+Lines 91-92 change the VDP registers back to the defaults for a running 
+XB program.
+
+Lines 95-96 then restore the return address, and return to the XB interpreter.
+
+Lines 99-104 is the routine to set a VDP address.
+
+Line 107 is a bitmask used by the RLE unpack routine, which is in lines 
+112-152.
+
+Lines 157-169 is the direct copy function.
+
+Lines 173-188 is the data backup function. The data backed up was determined 
+by observation and documentation, and there are two sets.
+
+First, the data from >3f0 to >3ff is backed up. This contains the graphic 
+shape for the cursor and edge character. 
+
+The second part is a little tricky - it backs up the Disk buffers and 
+interpreter space up to >3800 (after that point we don't modify anything in 
+VRAM). I wanted to support whatever configuration was in use, within reason, 
+so we read the actual address for free RAM and subtract 64 bytes for the 
+interpreter workspace. Then we subtract it from >3800 - if we get a negative 
+number, then the value was higher than >3800 (this would be true for CALL 
+FILES(2) or CALL FILES(1), or a system like Classic99 that does not use 
+VRAM buffers, or even for cassette systems. Otherwise, it copies however 
+much data is needed. Normally (for CALL FILES(3)) this is 120 bytes. 
+
+Back to the program, 191-198 is the FROMVR copy loop that copies from VRAM to 
+CPU RAM.
+
+Lines 200-208 is the TOVR copy loop that copies from CPU RAM back to VRAM.
+
+Lines 212-222 are a subroutine to load a list of addresses to the VDP address 
+register - it's used to set up the VDP registers. The last entry in the list 
+is assumed to set the write address of the sprite table, so it can drop a 
+>D0 byte in there and disable sprites.
+
+Line 225 is the list of register settings for bitmap mode.
+
+Line 227 is the list of regsiter settings to go back to XB mode.
+
+Line 230 defines some space for the buffered data to save to.
+
+

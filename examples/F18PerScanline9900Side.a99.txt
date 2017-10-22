@@ -1,0 +1,319 @@
+* Display a per-scanline palette image on the F18A
+* by Tursi - proven to work
+* A004-B803 -- Pattern table
+* B804-D003 -- color table
+* D004-E803 -- palette table (unpacked)
+
+	DEF START,SFIRST,SLAST,SLOAD
+
+PATT EQU >A004
+COLR EQU >B804
+PALL EQU >D004
+PROGT EQU >1B20
+	
+	AORG >A000
+	
+SFIRST
+SLOAD	
+START
+	B @BEGIN
+
+	AORG >E804
+
+* registers for bitmap (and 5A00 is the address of the sprite table)
+* background is transparent (the only color never redefined)
+* PDT - >0000
+* SIT - >1800
+* SDT - >1800
+* CT  - >2000
+* SAL - >1B00
+* BG Color is 0 because that color is left consistent by my converter
+BMREGS DATA >8002,>8206,>83ff,>8403,>8536,>8603,>8700,>5B00,>0000
+
+VDPWA
+	SWPB R0
+	MOVB R0,@>8C02
+	SWPB R0
+	MOVB R0,@>8C02
+	B *R11  
+	
+* load regs list to VDP address, end on >0000 and write >D0 (for sprites)
+* address of table in R1
+LOADRG
+	MOV R11,R3
+LOADLP
+	MOV *R1+,R0
+	JEQ LDRDN
+	BL @VDPWA
+	JMP LOADLP
+LDRDN
+	LI R1,>D000
+	MOVB R1,@>8C00
+	B *R3	
+
+* Binary data for the GPU program. Our assemblers aren't smart enough to let
+* us assemble code at one address but target another.	
+PROG
+  DATA >04C0         CLR R0         * copy from
+  DATA >0201         LI R1,>1DFE    * copy to
+  DATA >1DFE  
+  DATA >0202         LI R2,171      * num bytes / 4 (first loop - 512 output bytes - 171 loops * 3 bytes = 513 bytes)
+  DATA >00AB  
+  DATA >06A0         BL @CPLP
+  DATA >1B3C  
+  DATA >0201         LI R1,>3800    * second part (4k)
+  DATA >3800  
+  DATA >0202         LI R2,1365     * num bytes / 4 (1365*3 bytes = 4095 - the one extra byte is in the first table)
+  DATA >0555  
+  DATA >06A0         BL @CPLP
+  DATA >1B3C  
+  DATA >100F         JMP RUN        * jump over the copy loop to go idle at the run block
+  DATA >C0F0         MOV *R0+,R3    * copy word 0A BB
+  DATA >C130         MOV *R0+,R4    * copy word 0C DD
+  DATA >C143         MOV R3,R5      * setup work register
+  DATA >0A45         SLA R5,4       * Shift up 'A'
+  DATA >0245         ANDI R5,>F000  * mask
+  DATA >F000  
+  DATA >F144         SOCB R4,R5     * get 'C'
+  DATA >DC45         MOVB R5,*R1+   * output 'AC'
+  DATA >06C3         SWPB R3        * prepare 'BB'
+  DATA >DC43         MOVB R3,*R1+
+  DATA >06C4         SWPB R4        * prepare 'DD'
+  DATA >DC44         MOVB R4,*R1+
+  DATA >0602         DEC R2         * count down
+  DATA >16F2         JNE CPLP       * continue till finished
+  DATA >045B         B *R11         * return
+  DATA >0340         IDLE           * go back to sleep - CPU must wake up us again
+  DATA >04C5         CLR R5         * just make sure the LSB is blank
+  DATA >0206         LI R6,>1FFF    * end of first block (unused byte)
+  DATA >1FFF  
+  DATA >0207         LI R7,>47FF    * end of second block (unused byte)
+  DATA >47FF  
+  DATA >0208         LI R8,>1DFE    * start of first block
+  DATA >1DFE  
+  DATA >0209         LI R9,>3800    * start of second block
+  DATA >3800  
+  DATA >020A         LI R10,>5000   * address of palette table
+  DATA >5000  
+  DATA >020C         LI R12,>F000   * a mask ('A')
+  DATA >F000  
+  DATA >020D         LI R13,>FF00   * compare value for scanline 255
+  DATA >FF00  
+  DATA >020E         LI R14,>7000   * address of scanline index
+  DATA >7000  
+  DATA >978D         CB R13,*R14    * check whether we are on line 255 yet (it repeats through line 262)
+  DATA >16FE         JNE RUNLP
+  DATA >C108         MOV R8,R4      * reset current palette table address
+  DATA >C15E         MOV *R14,R5    * gets scanline and blanking bit
+  DATA >2160         COC @BLANK,R5  * this will match immediately during vblank, that's okay :)
+  DATA >1BD4  
+  DATA >16FC         JNE SCANW1
+  DATA >2AA0         XOR @PALOFF,R10 * Next palette register offset
+  DATA >1BD2  
+  DATA >22A0         COC @PALOFF,R10 * test the result equal to 5020? (too bad it wasn't 0/not 0)
+  DATA >1BD2  
+  DATA >1302         JEQ PAL2        * palette 2 is set
+  DATA >04C0         CLR R0          * Palette 1 (sets sprites as well)
+  DATA >1002         JMP PALCOM
+  DATA >0200         LI R0,>0100     * second palette
+  DATA >0100  
+  DATA >D800         MOVB R0,@>6018  * VDP register >18
+  DATA >6018  
+  DATA >0203         LI R3,8         * 16 entries to copy / 2
+  DATA >0008  
+  DATA >C3CA         MOV R10,R15     * palette table address
+  DATA >D034         MOVB *R4+,R0    * 'Ac'
+  DATA >D074         MOVB *R4+,R1    * 'BB'
+  DATA >D0B4         MOVB *R4+,R2    * 'DD'
+  DATA >06C2         SWPB R2         * 00DD
+  DATA >D080         MOVB R0,R2      * ACDD
+  DATA >06C1         SWPB R1         * 00BB
+  DATA >0940         SRL R0,4        * 0ACx
+  DATA >D040         MOVB R0,R1      * 0ABB
+  DATA >CFC1         MOV R1,*R15+    * write 0ABB    
+  DATA >CFC2         MOV R2,*R15+    * write 0CDD
+  DATA >8184         C R4,R6         * check for first table finished
+  DATA >1602         JNE FIRSTB
+  DATA >C109         MOV R9,R4       * yes, load second table
+  DATA >1002         JMP NEXTCOL
+  DATA >81C4         C R4,R7         * check for second table finished (split into 2 loops could avoid the double test)
+  DATA >14DB         JHE RUNLP       * yes, wait for new frame
+  DATA >0603         DEC R3
+  DATA >16EE         JNE SCANL1      * loop around for more
+  DATA >915E         CB *R14,R5      * wait for the scanline to change
+  DATA >16DA         JNE SCANW1      * it changed, get to work immediately!
+  DATA >10FD         JMP NEXTLIN     * not changed, keep waiting
+  DATA >0020         DATA >0020      * XORd value for the alternate palette address
+  DATA >0001         DATA >0001      * value of the blank bit (note it's always set in vblank)
+PROGEND	
+
+BEGIN
+	LWPI >8300
+
+* F18A blind unlock code
+	LI R0,>B91C             * VR1/57, value 00011100
+	BL @VDPWA               * write once (corrupts VDPR1)
+	BL @VDPWA               * write again (unlocks enhanced mode)
+
+* Setup bitmap mode and load the image
+* Pattern at >0000, SIT at >1800, SAL at >1B00, SDT at >1800, CT at >2000
+* 0000-17FF = Pattern table
+* 1800-19FF = Screen Image Table (0-255 repeated 3 times)
+* 1A00-1A1F = Sprite Attribute List (just contains D0 00 to terminate the sprite list)
+* 1A20-1DFF = program code to display the screen (won't need that much! Rest can be sprites)
+* 1DFE-1FFF = First 0.5k of packed per scanline palette table (actually 2 bytes more for easier math)
+* 2000-37FF = Color table
+* 3800-47FF = Palette Per Scanline table (there's only 4k here! not 6k! Packed palette is 4.5k!)
+
+* screen off
+	LI R0,>81A0
+	BL @VDPWA
+	
+* set display and disable sprites
+	LI R1,BMREGS
+	BL @LOADRG
+	
+* set up SIT - We load the standard 0-255, 3 times
+	LI R0,>5800
+	BL @VDPWA
+	CLR R2
+NQ# 
+	CLR R1
+LP# 
+	MOVB R1,@>8C00
+	AI R1,>0100
+	CI R1,>0000
+	JNE LP#
+	INC R2
+	CI R2,3
+	JNE NQ#
+	
+* Screen is disabled
+
+* copy the palette before the graphics data, so the GPU can pack and relocate it
+	LI R0,>4000
+	BL @VDPWA
+	
+	LI R0,PALL
+	LI R1,6144
+PLP1	
+	MOVB *R0+,@>8C00
+	DEC R1
+	JNE PLP1
+	
+* also load the GPU program
+	LI R0,PROGT
+	ORI R0,>4000
+	BL @VDPWA
+	
+	LI R0,PROG
+PRLP
+	MOVB *R0+,@>8C00
+	CI R0,PROGEND
+	JNE PRLP
+	
+* Tell the GPU to start running
+	LI R1,PROGT
+	CLR R0
+	MOVB R1,R0
+	SWPB R0
+	ORI R0,>B600
+	BL @VDPWA
+	CLR R0
+	SWPB R1
+	MOVB R1,R0
+	SWPB R0
+	ORI R0,>B700
+	BL @VDPWA
+	
+* we probably should wait, but it's so much faster than we are
+* we will copy the color table first, since there's no overlap
+* by the time we are done, the GPU should be long finished with
+* the palette table.
+	
+* C data goes to VDP >2000 from TIAC
+	LI R0,>6000
+	BL @VDPWA
+	
+	LI R0,COLR
+	LI R1,6144
+COLLP
+	MOVB *R0+,@>8C00
+	DEC R1
+	JNE COLLP
+
+* P data goes to VDP >0000 from TIAP
+	LI R0,>4000
+	BL @VDPWA
+
+	LI R0,PATT
+	LI R1,6144
+PATLP
+	MOVB *R0+,@>8C00
+	DEC R1
+	JNE PATLP
+	
+* Finally, the GPU should be idling, so wake it up
+	LI R0,>B801
+	BL @VDPWA
+
+* ENABLE VIDEO
+	LI R0,>81E2
+	BL @VDPWA
+
+* and.... that's it! We should be running.
+
+* It's actually a bit irresponsible to leave a GPU program running
+* when the console is reset (it seems to cause issues with crashes,
+* the OS just doesn't like everything changing underneath it).
+* So, it's best to disable interrupts and check yourself. If you
+* DO use interrupts, though, make sure the disable the QUIT key
+* so you can trap it and stop the GPU yourself. :)
+
+* We are not doing anything else, so just watch for QUIT
+* but all our CPU time is free! We could load a few sprites and
+* play a game, or whatever you like, the GPU is doing all the
+* hard work. :)
+WAIT
+* This quit test copied from the console ROM
+	LI 12,>0024 			* Load CRU
+	LDCR @>0012,3
+	SRC 12,7				* delay
+	LI 12,>0006
+	STCR 5,8 				* Fetch CRU
+	CZC @QUITK,5 			* QUIT key?
+	JNE WAIT
+	
+* User pressed QUIT - stop the GPU and then Reset	
+	LI R0,>B800				* stop the GPU
+	BL @VDPWA
+	
+* reload the default palette
+	LI R0,>AFC0          * Reg 47, value: 1100 0000, DPM = 1, AUTO INC = 1, palreg 0.       
+    BL   @VDPWA       
+
+	LI R1,PALT
+	LI R2,32
+
+PALLP
+	MOVB *R1+,@>8C00
+	DEC R2
+	JNE PALLP
+	
+	LI R0,>AF00			  * Turn off the DPM mode
+    BL   @VDPWA       
+
+* we've done all we can, the only thing left is that the VDP is still in enhanced mode
+	BLWP @>0000 			* Software reset	
+
+QUITK
+	DATA >1100				* CRU value for QUIT
+
+PALT
+* default F18 palette values
+	DATA >0000,>0000,>02C3,>05D6,>054F,>076F,>0D54,>04EF
+	DATA >0F54,>0F76,>0DC3,>0ED6,>02B2,>0C5C,>0CCC,>0FFF
+
+SLAST	
+	END
+	

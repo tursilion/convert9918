@@ -1,0 +1,65 @@
+ImgSource was a product created by Smaller Animals Software. The last update to their webpage contained this text:
+
+-----
+End Of The Line
+Smaller Animals Software has been in business for 23 years. And it's been fun 
+for every one of them. But, we've reached a point where the cost of keeping 
+the virtual doors open far exceeds what sales bring in. And so, with much 
+regret, we will be shutting down Smaller Animals Software. The proposed final 
+date of operation is May 31, 2016. After that date, sales and support of all 
+Smaller Animals Software products will cease. 
+
+We realize this is inconvenient for our customers. And we wish there was a 
+way we could continue to develop and support the products we've been working 
+on for all these years. But, there doesn't seem to be a way to do that. 
+
+We would like to thank all of our customers and especially those who have 
+stuck with us over the years and have contributed greatly with their feedback 
+and suggestions. It seems safe to say that the majority of the features in our 
+products came directly from user suggestions. We wouldn't have done it 
+without you. 
+-----
+
+And the following:
+
+-----
+End Of The Line
+Smaller Animals Software has been in business for 23 years. And it's been fun 
+for every one of them. But, we've reached a point where the cost of keeping 
+the virtual doors open far exceeds what sales bring in. And so, with much 
+regret, we will be shutting down Smaller Animals Software. The proposed final 
+date of operation is June 30, 2016. After that date, sales and support of all 
+Smaller Animals Software products will cease. 
+
+ImgSource users are encouraged to purchase a source subscription, to allow 
+them to diagnose and correct any issues they may encounter in the future. 
+We realize this is inconvenient for our customers. And we wish there was a way 
+we could continue to develop and support the products we've been working on 
+for all these years. But, there doesn't seem to be a way to do that. 
+
+We would like to thank all of our customers and especially those who have 
+stuck with us over the years and have contributed greatly with their feedback 
+and suggestions. It seems safe to say that the majority of the features in our 
+products came directly from user suggestions. We wouldn't have done it 
+without you. 
+-----
+
+The above text was collected from Archive.org, and was dated 2016/05/29
+https://web.archive.org/web/20160529170702/http://www.smalleranimals.com:80/
+
+No later updates could be detected save the current text:
+
+-----
+Out Of Business
+Smaller Animals Software is out of business.
+-----
+
+I have attempted to contact Smaller Animals Software several times over the
+last year to no avail. Therefore I believe that ImgSource is entirely
+abandoned and to that end, in order to support those who use my software,
+which I based on ImgSource, I am now releasing my software including the
+pieces of ImgSource that I incorporated and the key that supported it. This
+is necessary to support my software in the absence of Smaller Animals
+Software and I believe that I have made reasonable efforts to contact
+Smaller Animals Software in order to make alternate arrangements. Thanks!
+

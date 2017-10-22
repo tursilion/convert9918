@@ -1,0 +1,106 @@
+// code to load a bitmap on the Coleco
+// uses SDCC and the libraries from http://www.colecovision.eu
+// Warning: adapted from another project - not tested directly :)
+// by Tursi - Released to Public Domain
+
+#include "cv.h"
+#include "cvu.h"
+
+// addresses for the pointers
+//
+// load the address of the Color table here
+#define GAMEC 0x80e0
+// load the address of the pattern table here
+#define GAMEP 0x80e2
+
+
+// define this flag to load an RLE image instead of uncompressed
+//#define USE_RLE
+
+// VRAM Usage:
+// 0000 - 17FF - Pattern table
+// 1800 - 1AFF - Screen image table
+// 1B00 - 1B7F - Sprite attribute list
+// 1B80 - 1FFF - free space
+// 2000 - 37FF - Color table
+// 3800 - 3FFF - sprite descriptor table
+
+#ifdef USE_RLE
+void RLEUnpack(cv_vmemp p, unsigned char *buf) {
+	int cnt;
+	unsigned char z;
+
+	cv_set_write_vram_address(p);
+	cnt=6144;
+	while (cnt > 0) {
+		z=*buf;
+		if (z&0x80) {
+			// run of bytes
+			buf++;
+			cv_vmemset_slow(*buf, z&0x7f);
+			buf++;
+		} else {
+			// sequence of data
+			buf++;
+			cv_memtovmemcpy_slow(buf, z);
+			buf+=z;
+		}
+		cnt-=(z&0x7f);
+	}
+}
+#endif
+
+
+// code starts
+void main(void)
+{
+	unsigned char i,j;
+
+	// just display some bitmap pictures
+	cv_set_screen_active(false);			// Switch screen off.
+	cv_set_screen_mode(CV_SCREENMODE_BITMAP);
+	cv_set_sprite_big(1);
+	cv_set_sprite_magnification(0);
+
+	// set the mode bits ourselves
+	cv_set_read_vram_address(0x8206);		// SIT at >1800
+	cv_set_read_vram_address(0x83ff);		// CT at >2000
+	cv_set_read_vram_address(0x8403);		// PDT at >0000
+	cv_set_read_vram_address(0x8536);		// SAL at >1B00
+	cv_set_read_vram_address(0x8607);		// SDT at >3800
+
+	cv_set_colors(CV_COLOR_BLACK, CV_COLOR_BLACK);
+
+	cvu_vmemset(0x1b00, 0xd0, 128);				// disable all sprites
+
+	pPat=*(unsigned char**)GAMEP;
+	pCol=*(unsigned char**)GAMEC;
+
+	// load screen to VRAM
+#ifdef USE_RLE
+	RLEUnpack(0x0000, pPat);
+	RLEUnpack(0x2000, pCol);
+#else
+	cvu_memtovmemcpy(0x0000, pPat, 6144);
+	cvu_memtovmemcpy(0x2000, pCol, 6144);
+#endif
+
+	// fill the image table with three sets of 0-255
+	cv_set_write_vram_address(0x1800);
+	for (i=0; i<3; i++) {
+		j=0;
+		do {
+			cv_voutb(j++);
+			cv_voutb(j++);
+			cv_voutb(j++);
+			cv_voutb(j++);
+		} while (j != 0);
+	}
+
+	// finally, turn on the display
+	cv_set_screen_active(true);
+
+	// and spin...
+	for (;;) ;
+
+}

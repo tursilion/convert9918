@@ -1,0 +1,232 @@
+* (C) 2011 by Mike Brent aka Tursi
+* You can use this in your own works, just give me some credit!
+* Displays a bitmap image loaded with XB and RETURNS to XB on keypress
+TIAP EQU >CDE6
+TIAC EQU >E5E6
+KSCAN EQU >201C
+
+* mess as little as possible with the workspace!
+	AORG >FDE6
+
+	MOV R11,@BUF		* SAVE RETURN ADDRESS, we will be overwriting it
+	
+* Load a TI Artist picture from memory
+* Use the labels TIAP and TIAC for the picture and color tables
+* Setup bitmap mode and load the image
+* Pattern at >0000, SIT at >1800, SAL at >1B00, CT at >2000
+	LI R0,>81A0
+	BL @VWAD
+	
+* screen off -- backup XB data
+	LI R3,FROMVR
+	BL @DATAST
+	
+* set display and disable sprites
+	LI R1,BMREGS
+	BL @LOADRG
+	
+* set up SIT
+	LI R0,>5800
+	BL @VWAD
+	CLR R2
+NQ# 
+	CLR R1
+LP# 
+	MOVB R1,@>8C00
+	AI R1,>0100
+	CI R1,>0000
+	JNE LP#
+	INC R2
+	CI R2,3
+	JNE NQ#
+	
+* Screen is disabled
+* P data goes to VDP >0000 from TIAP
+* C data goes to VDP >2000 from TIAC
+
+* CPU MEMORY BASE
+	LI R4,TIAP
+* SET VDP ADDRESS
+	LI R0,>4000
+	BL @VWAD
+* COPY 6K (>1800 BYTES)
+* VDP IS OFF - CAN WRITE FULL SPEED!
+* LOAD RLE DATA
+	BL @LOADDIR
+
+* CPU MEMORY BASE
+	LI R4,TIAC
+* SET VDP ADDRESS
+	LI R0,>6000
+	BL @VWAD
+* LOAD RLE
+	BL @LOADDIR
+
+* ENABLE VIDEO
+	LI R0,>81E2
+	BL @VWAD
+
+* wait for enter to be pressed
+LP1
+	LIMI 2
+	LIMI 0
+	LI R0,>0500
+	MOVB R0,@>8374
+	BLWP @KSCAN
+	CLR R0
+	MOVB @>8375,R0
+	CI R0,>0D00
+	JNE LP1
+	
+* Disable video, restore data, restore video
+* then return to XB. If we're lucky.
+	LI R0,>81A0
+	BL @VWAD
+	
+* screen off -- RESTORE XB data
+	LI R3,TOVR
+	BL @DATAST
+	
+* RESTORE XB REGISTERS
+	LI R1,XBREGS
+	BL @LOADRG
+	
+* AND RETURN	
+	MOV @BUF,R11
+	B *R11
+	
+* VDP Write Address
+VWAD
+	SWPB R0
+	MOVB R0,@>8C02
+	SWPB R0
+	MOVB R0,@>8C02
+	B *R11
+	
+* MASK FOR UNPACK RLE
+BITMSK	DATA >8000
+
+* Unpack RLE data from R4
+* also uses R0, R1 and R3
+* VDP address must already be set!
+LOADRLE
+* VDP 'BASE'
+	LI R3,>8C00
+	
+* Number of bytes to unpack
+	LI R0,6144
+	CLR R1
+LDRLE1
+* Get control byte	
+	MOVB *R4+,R1
+	
+* If MSB is set, it's a run of bytes, else it's literal data
+	COC @BITMSK,R1
+	JEQ	RLERUN
+	
+* Sequence, R1 contains count
+	SWPB R1
+	S R1,R0
+SEQ1
+	MOVB *R4+,*R3
+	DEC R1
+	JNE SEQ1
+	JMP ENDRLE
+	
+* Run of bytes, next byte is the one, R1 is the count
+RLERUN
+	ANDI R1,>7F00
+	SWPB R1
+	S R1,R0
+RUN1
+	MOVB *R4,*R3
+	DEC R1
+	JNE RUN1
+	INC R4
+	
+* Check for end of loop
+ENDRLE
+	MOV R0,R0
+	JGT LDRLE1
+	
+	B *R11
+	
+* Copy direct data from R4
+* also uses R0, R1 and R3
+* VDP address must already be set!
+LOADDIR
+* VDP 'BASE'
+	LI R3,>8C00
+	
+* Number of bytes to unpack
+	LI R0,6144
+	
+CPYLP
+	MOVB *R4+,*R3
+	DEC R0
+	JNE CPYLP
+	
+	B *R11
+	
+* BACKUP OR RESTORE DATA
+* R3 - COPY FUNCTION
+DATAST
+	MOV R11,R5
+	LI R1,BUF
+	INCT R1
+	LI R0,>03F0   * cursor and edge char
+	LI R2,16
+	BL *R3
+	MOV @>8370,R0 * top of VRAM
+	AI R0,-88     * bytes used by XB interp
+	MOV R0,R4
+	LI R2,>3800
+	S R4,R2
+	JLT NONEED
+	BL *R3
+NONEED
+	B *R5
+	
+* SHORT COPY LOOP - R1 IS BACKUP BUFFER, R0 IS VDP ADDRESS, R2 IS COUNT
+FROMVR
+	MOV R11,R4
+	BL @VWAD
+FROMCP
+	MOVB @>8800,*R1+
+	DEC R2
+	JNE FROMCP
+	B *R4
+	
+TOVR
+	MOV R11,R4
+	ORI R0,>4000
+	BL @VWAD
+TOCP
+	MOVB *R1+,@>8C00
+	DEC R2
+	JNE TOCP
+	B *R4
+	
+* load regs list to VDP address, end on >0000 and write >D0 (for sprites)
+* address of table in R1
+LOADRG
+	MOV R11,R3
+LOADLP
+	MOV *R1+,R0
+	JEQ LDRDN
+	BL @VWAD
+	JMP LOADLP
+LDRDN
+	LI R1,>D000
+	MOVB R1,@>8C00
+	B *R3
+	
+* registers for bitmap
+BMREGS DATA >8002,>8206,>83ff,>8403,>8536,>5B00,>0000
+* registers for XB
+XBREGS DATA >8000,>8200,>8320,>8400,>8506,>81e0,>4300,>0000
+
+* backup data space
+BUF	BSS 144
+
+	END

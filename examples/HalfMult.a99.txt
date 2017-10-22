@@ -1,0 +1,158 @@
+* loads and displays a half-multicolor image from RAM
+
+	DEF MAIN
+	REF PDATA,CDATA,MDATA
+
+FLAG EQU >8310		* storage for the frame flag
+
+* VDP Write address
+VWAD
+	SWPB R0
+	MOVB R0,@>8C02
+	SWPB R0
+	MOVB R0,@>8C02
+	B *R11
+
+MAIN
+* Setup bitmap mode and load the image from GROM!
+* Note that this overwrites vectors at the top of
+* VDP RAM that the disk system needs to use. I 
+* used to save off >80 bytes from >3780 to work
+* around that.
+* VDP REGISTERS
+	LI R0,>8002
+	BL @VWAD
+	LI R0,>81E0
+	BL @VWAD
+	LI R0,>820E
+	BL @VWAD
+	LI R0,>83FF
+	BL @VWAD
+	LI R0,>8403
+	BL @VWAD
+	LI R0,>8576
+	BL @VWAD
+	LI R0,>8607
+	BL @VWAD
+	LI R0,>8701
+	BL @VWAD
+	
+*DISABLE FIRST SPRITE	
+	LI R0,>7B00
+	BL @VWAD
+	LI R1,>D000
+	MOVB R1,@>8C00
+
+* set up screen image table (not normal bitmap, each bank offset by 1 line)
+	LI R0,>7800
+	BL @VWAD
+	CLR R2
+	CLR R1
+	MOV R1,R3
+NQ# 
+	MOV R3,R1
+LP# 
+	MOVB R1,@>8C00
+	AI R1,>0100
+	CB R1,R3
+	JNE LP#
+	AI R3,>2000		* change start offset by 32
+	INC R2
+	CI R2,3
+	JNE NQ#
+
+* P data at VDP >0000 from PDATA
+* C data at VDP >2000 from CDATA
+* M data at VDP >1800 from MDATA
+* VDP 'BASE'
+	LI R3,>8C00
+* SET VDP ADDRESS
+	LI R2,>4000
+	SWPB R2
+	MOVB R2,@>0002(R3)
+	SWPB R2
+	MOVB R2,@>0002(R3)
+* COPY 6K (>1800 BYTES)
+	LI R4,PDATA
+	LI R0,1536
+CP1
+	MOVB *R4+,*R3
+	MOVB *R4+,*R3
+	MOVB *R4+,*R3
+	MOVB *R4+,*R3
+	DEC R0
+	JNE CP1
+
+* SET VDP ADDRESS
+	LI R2,>6000
+	SWPB R2
+	MOVB R2,@>0002(R3)
+	SWPB R2
+	MOVB R2,@>0002(R3)
+* COPY 6K (>1800 BYTES)
+	LI R4,CDATA
+	LI R0,1536
+CP2
+	MOVB *R4+,*R3
+	MOVB *R4+,*R3
+	MOVB *R4+,*R3
+	MOVB *R4+,*R3
+	DEC R0
+	JNE CP2
+	
+* SET VDP ADDRESS
+	LI R2,>5800
+	SWPB R2
+	MOVB R2,@>0002(R3)
+	SWPB R2
+	MOVB R2,@>0002(R3)
+* COPY 2K (>0800 BYTES)
+	LI R4,MDATA
+	LI R0,512
+CP3
+	MOVB *R4+,*R3
+	MOVB *R4+,*R3
+	MOVB *R4+,*R3
+	MOVB *R4+,*R3
+	DEC R0
+	JNE CP3
+	
+* clear the frame flag	
+	CLR @FLAG
+
+*	cv_set_vint_handler(nmi);
+	LI R0,NMI
+	MOV R0,@>83C4
+
+LP1
+* allow ints to happen
+	LIMI 2
+	LIMI 0
+* RESET SCREEN TIMEOUT (any value ok)
+	LI R0,>4000
+	MOV R0,@>83D6
+
+	JMP LP1
+
+*// called on vblank from VDP
+NMI
+	MOV R11,R1
+	INV @FLAG
+	JEQ NMI1
+	
+* not zero, so set multicolor
+	LI R0,>8000
+	BL @VWAD
+	LI R0,>81E8
+	BL @VWAD
+	B *R1
+	
+NMI1
+* is zero, so set bitmap
+	LI R0,>8002
+	BL @VWAD
+	LI R0,>81E0
+	BL @VWAD
+	B *R1
+
+	END

@@ -1,0 +1,178 @@
+* Display a static palette image on the F18A
+* by Tursi
+* A004-B803 -- Pattern table
+* B804-D003 -- color table
+* D004-D023 -- palette table
+
+	DEF START,SFIRST,SLAST,SLOAD
+
+PATT EQU >A004
+COLR EQU >B804
+PALL EQU >D004
+	
+	AORG >A000
+	
+SFIRST
+SLOAD	
+START
+	B @BEGIN
+
+	AORG >D024
+
+* registers for bitmap (and 5A00 is the address of the sprite table)
+* background is transparent (the only color never redefined)
+* PDT - >0000
+* SIT - >1800
+* SDT - >1800
+* CT  - >2000
+* SAL - >1B00
+* BG Color is 0 because that color is left consistent by my converter
+BMREGS DATA >8002,>8206,>83ff,>8403,>8536,>8603,>8700,>5B00,>0000
+
+VDPWA
+	SWPB R0
+	MOVB R0,@>8C02
+	SWPB R0
+	MOVB R0,@>8C02
+	B *R11  
+	
+* load regs list to VDP address, end on >0000 and write >D0 (for sprites)
+* address of table in R1
+LOADRG
+	MOV R11,R3
+LOADLP
+	MOV *R1+,R0
+	JEQ LDRDN
+	BL @VDPWA
+	JMP LOADLP
+LDRDN
+	LI R1,>D000
+	MOVB R1,@>8C00
+	B *R3	
+
+BEGIN
+	LWPI >8300
+
+* F18A blind unlock code
+	LI R0,>B91C             * VR1/57, value 00011100
+	BL @VDPWA               * write once (corrupts VDPR1)
+	BL @VDPWA               * write again (unlocks enhanced mode)
+
+* Setup bitmap mode and load the image
+* Pattern at >0000, SIT at >1800, SAL at >1B00, SDT at >1800, CT at >2000
+* 0000-17FF = Pattern table
+* 1800-19FF = Screen Image Table (0-255 repeated 3 times)
+* 1A00-1A1F = Sprite Attribute List (just contains D0 00 to terminate the sprite list)
+* 1A20-1FFF = free - could contain sprites
+* 2000-37FF = Color table
+* 3800-     = free
+
+* screen off
+	LI R0,>81A0
+	BL @VDPWA
+	
+* set display and disable sprites
+	LI R1,BMREGS
+	BL @LOADRG
+	
+* set up SIT - We load the standard 0-255, 3 times
+	LI R0,>5800
+	BL @VDPWA
+	CLR R2
+NQ# 
+	CLR R1
+LP# 
+	MOVB R1,@>8C00
+	AI R1,>0100
+	CI R1,>0000
+	JNE LP#
+	INC R2
+	CI R2,3
+	JNE NQ#
+	
+* Screen is disabled
+
+* C data goes to VDP >2000 from TIAC
+	LI R0,>6000
+	BL @VDPWA
+	
+	LI R0,COLR
+	LI R1,6144
+COLLP
+	MOVB *R0+,@>8C00
+	DEC R1
+	JNE COLLP
+
+* P data goes to VDP >0000 from TIAP
+	LI R0,>4000
+	BL @VDPWA
+
+	LI R0,PATT
+	LI R1,6144
+PATLP
+	MOVB *R0+,@>8C00
+	DEC R1
+	JNE PATLP
+	
+* Load the 32 color palette
+	LI R1,PALL
+	BL @LOADPAL
+
+* ENABLE VIDEO
+	LI R0,>81E2
+	BL @VDPWA
+
+* It's actually a bit irresponsible to leave the palette in a 
+* weird state when you exit.
+* So, it's best to disable interrupts and check yourself. If you
+* DO use interrupts, though, make sure the disable the QUIT key
+* so you can trap it and fix the palette yourself. :)
+
+* We are not doing anything else, so just watch for QUIT
+WAIT
+* This quit test copied from the console ROM
+	LI 12,>0024 			* Load CRU
+	LDCR @>0012,3
+	SRC 12,7				* delay
+	LI 12,>0006
+	STCR 5,8 				* Fetch CRU
+	CZC @QUITK,5 			* QUIT key?
+	JNE WAIT
+	
+* User pressed QUIT - reload the default palette
+	LI R1,PALT
+	BL @LOADPAL
+	
+* we've done all we can, the only thing left is that the VDP is still in enhanced mode
+	BLWP @>0000 			* Software reset	
+
+* Load a palette - R1 contains the palette address. Destroys R0,R1,R2,R3,R11
+LOADPAL
+	MOV R11,R3
+	
+	LI R0,>AFC0          * Reg 47, value: 1100 0000, DPM = 1, AUTO INC = 1, palreg 0.       
+    BL @VDPWA       
+
+	LI R2,32
+
+PALLP
+	MOVB *R1+,@>8C00
+	DEC R2
+	JNE PALLP
+	
+	LI R0,>AF00			  * Turn off the DPM mode
+    BL   @VDPWA       
+
+	B *R3
+	
+QUITK
+	DATA >1100				* CRU value for QUIT
+
+PALT
+* default F18 palette values
+	DATA >0000,>0000,>02C3,>05D6,>054F,>076F,>0D54,>04EF
+	DATA >0F54,>0F76,>0DC3,>0ED6,>02B2,>0C5C,>0CCC,>0FFF
+
+SLAST	
+	END
+	

@@ -1,0 +1,108 @@
+* Display a multicolor image 
+* by Tursi - Released to Public Domain
+* A004-A603 -- Pattern table
+
+	DEF START,SFIRST,SLAST,SLOAD
+
+PATT EQU >A004
+	
+	AORG >A000
+	
+SFIRST
+SLOAD	
+START
+	B @BEGIN
+
+	AORG >A604
+
+* registers for multicolor (and 5A00 is the address of the sprite table)
+* background is transparent
+* SIT - >0000 - >0300
+* CT  - >0000 (not used)
+* PDT - >0800 - >1000
+* SAL - >1B00 - >1B1F
+* SDT - >2000 - >2800
+BMREGS DATA >8000,>8200,>8300,>8401,>8536,>8604,>8700,>5B00,>0000
+
+VDPWA
+	SWPB R0
+	MOVB R0,@>8C02
+	SWPB R0
+	MOVB R0,@>8C02
+	B *R11  
+	
+* load regs list to VDP address, end on >0000 and write >D0 (for sprites)
+* address of table in R1
+LOADRG
+	MOV R11,R3
+LOADLP
+	MOV *R1+,R0
+	JEQ LDRDN
+	BL @VDPWA
+	JMP LOADLP
+LDRDN
+	LI R1,>D000
+	MOVB R1,@>8C00
+	B *R3	
+
+BEGIN
+	LWPI >8300
+
+* Setup multicolor mode and load the image
+
+* screen off
+	LI R0,>81A0
+	BL @VDPWA
+	
+* set display and disable sprites
+	LI R1,BMREGS
+	BL @LOADRG
+	
+* set up SIT - We load the standard 6 groups of 4 rows
+	LI R0,>4000
+	BL @VDPWA
+	CLR R0			* GROUP OFFSET
+NQ#
+	CLR R1			* ROW COUNT
+LP#
+	CLR R2			* COLUMN COUNT
+LP2#
+	MOVB R0,@>8C00
+	AI R0,>0100
+	INC R2
+	CI R2,32		* DONE ROW?
+	JNE LP2#
+	INC R1
+	AI R0,>E000		* subtract >2000
+	CI R1,4			* DONE GROUP?
+	JNE LP#
+	AI R0,>2000
+	CI R0,>C000		* DONE SCREEN?
+	JNE NQ#
+	
+* Screen is disabled
+
+* P data goes to VDP >0800
+	LI R0,>4800
+	BL @VDPWA
+
+	LI R0,PATT
+	LI R1,1536
+PATLP
+	MOVB *R0+,@>8C00
+	DEC R1
+	JNE PATLP
+	
+* ENABLE VIDEO
+	LI R0,>81EA
+	BL @VDPWA
+
+* and.... that's it! We should be running.
+WAIT
+	LIMI 2
+	LIMI 0
+	JMP WAIT
+
+SLAST	
+	END
+	
