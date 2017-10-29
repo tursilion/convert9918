@@ -2,8 +2,12 @@
 
 extern char *cmdFileIn;
 extern bool fVerbose;
-extern unsigned char *bigdata;
 extern MYRGBQUAD palinit16[256];
+extern float_precision g_thresholdMap2x2[2][2];
+extern float_precision g_thresholdMap4x4[4][4];
+
+// macro to change the masking for the threshold map
+#define MAPSEEK(x) (x)&maskval
 
 // pIn is a 24-bit RGB image
 // pOut is an 8-bit palettized image, with the palette in 'pal'
@@ -11,21 +15,38 @@ extern MYRGBQUAD palinit16[256];
 // CurrentBest is the current closest value and is used to abort a search without
 // having to check all 8 pixels for a small speedup when the color is close
 // note that this function is never compiled -- it is renamed by each various function define
-void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
+void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 	int row,col;
+	// local temporary usage - adjusted map
+	float_precision g_thresholdMap2[4][4];
 	float_precision nDesiredPixels[8][3];		// there are 8 RGB pixels to match
-#ifndef QUANTIZE_ORDERED
+#ifdef ERROR_DISTRIBUTION
 	float_precision fPIXA, fPIXB, fPIXC, fPIXD, fPIXE, fPIXF;
 #endif
 	int nFixedColors = 0;				// used only when perscanlinepalette is set
 	float_precision (*thresholdMap)[4];
+	int maskval;
 
-	// update threshold map 2
-	for (int i1=0; i1<4; i1++) {
-		for (int i2=0; i2<4; i2++) {
-			// the standard one always brightens images... what if we offset it around zero?
-			// it's interesting.. preserves color much better, some glitches. Make an option?
-			g_thresholdMap2[i1][i2] = g_thresholdMap[i1][i2] - (darkenval/17.0);
+	if (mapSize == 2) {
+		maskval = 1;
+	} else if (mapSize == 4) {
+		maskval = 3;
+	} else {
+		printf("Bad map size %s\n", mapSize);
+		return;
+	}
+
+	// update threshold map 2 for the darken value
+	for (int i1=0; i1<mapSize; i1++) {
+		for (int i2=0; i2<mapSize; i2++) {
+			// so it's a slider now - but the original algorithm /does/ center around zero
+			// so normally this should be at 8, halfway
+			// Since this is a fraction it doesn't matter if it's 8x8 or 4x4
+			if (mapSize == 2) {
+				g_thresholdMap2[i1][i2] = g_thresholdMap2x2[i1][i2] - (darkenval/16.0);
+			} else {
+				g_thresholdMap2[i1][i2] = g_thresholdMap4x4[i1][i2] - (darkenval/16.0);
+			}
 		}
 		thresholdMap = g_thresholdMap2;
 	}
@@ -34,7 +55,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 	time_t nStartTime, nEndTime;
 	time(&nStartTime);
 
-#ifndef QUANTIZE_ORDERED
+#ifdef ERROR_DISTRIBUTION
 	// convert the integer dither ratios just once up here
 	fPIXA = (float_precision)PIXA/16.0;
 	fPIXB = (float_precision)PIXB/16.0;
@@ -50,7 +71,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 #endif
 
 	// create some workspace
-#ifndef QUANTIZE_ORDERED
+#ifdef ERROR_DISTRIBUTION
 	float_precision *pError = (float_precision*)malloc(sizeof(float_precision)*258*194*3);	// error map, 3 colors, includes 1 pixel border on sides & 2 on bottom (so first entry is x=-1, y=0, and each row is 258 pixels wide)
 	for (int idx=0; idx<258*194*3; idx++) {
 		pError[idx]=0.0;
@@ -178,7 +199,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 			}
 		}
 
-#ifndef QUANTIZE_ORDERED
+#ifdef ERROR_DISTRIBUTION
 		// divisor for the error value. Three errors are added together except for the left
 		// column (only 2), and top row (only 1). The top left pixel has none, but no divisor
 		// is needed since the stored value is also zero.
@@ -199,23 +220,21 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 				// the size of error patches. So don't do that.
 				memcpy(points, (pRGB+(row*256*3)), 256*3);
 
-// quantize2 doesn't need to add error
-#ifndef QUANTIZE_ORDERED2
 				// I can't tell if this is better in or out.
 				// add in the error if not row 0
 
 				if (row > 0) {
-#ifndef QUANTIZE_ORDERED
 					// address of entry in the error table (3 doubles per pixel and larger array)
+#ifdef ERROR_DISTRIBUTION
 					float_precision *pErrLine = pError + (row*258*3) + 3;
-
+#endif
 					for (int idx=0; idx<256*3; idx++) {	// we can loop over R,G,B in sequence for this
 						int val = points[idx/3].x[idx%3];
-						val += (int)((*pErrLine)/nErrDivisor+0.5);
-#else
-					for (int idx=0; idx<256*3; idx++) {	// we can loop over R,G,B in sequence for this
-						int val = points[idx/3].x[idx%3];
-						val += (int)(val*thresholdMap[idx&3][row&3]);
+#ifdef QUANTIZE_ORDERED
+						val += (int)(val*thresholdMap[MAPSEEK(idx)][MAPSEEK(row)]);
+#endif
+#ifdef ERROR_DISTRIBUTION
+						val	+= (int)((*pErrLine)/nErrDivisor+0.5);
 #endif
 
 						// clamp - it's necessary cause we're going into a byte, but it's technically wrong
@@ -224,7 +243,6 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 						points[idx/3].x[idx%3] = val;
 					}
 				}
-#endif
 
 				// since we have a set of fixed colors, don't include them in the set of palette selection pixels (better chance at a good palette)
 				// So first, find a color not in the list of fixed colors that we can actually use
@@ -411,7 +429,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 			// address of byte in the 8-bit image (1 byte per pixel)
 			BYTE *pOutLine = p8Bit + (row*256) + col;
 
-#ifndef QUANTIZE_ORDERED
+#ifdef ERROR_DISTRIBUTION
 			// address of entry in the error table (3 doubles per pixel and larger array)
 			float_precision *pErrLine = pError + (row*258*3) + ((col+1)*3);
 #endif
@@ -420,7 +438,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 			// This takes the original image, and adds in the data from the error map. We do
 			// all matching in float_precision mode now.
 			for (int c=0; c<8; c++, pInLine+=3
-#ifndef QUANTIZE_ORDERED
+#ifdef ERROR_DISTRIBUTION
 				, pErrLine+=3
 #endif
 				) {
@@ -428,70 +446,21 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 				nDesiredPixels[c][1] = (float_precision)(*(pInLine+1));	// green
 				nDesiredPixels[c][2] = (float_precision)(*(pInLine+2));	// blue
 
-#ifdef QUANTIZE_ORDERED2
-				// convert the pixel to 12 bit, then look up the desired
-				// pixel in the big dither map, and store THAT.
-				// hmm. At 70MB+, the big map is a big large to distribute...
-				if (NULL != bigdata) {
-					int r,g,b;
-					r = ((int)nDesiredPixels[c][0]>>4)&15;
-					g = ((int)nDesiredPixels[c][1]>>4)&15;
-					b = ((int)nDesiredPixels[c][2]>>4)&15;
-					int off = (b+(g*16)+(r*256))*(6144*2);	// base offset to pattern
-
-					// now convert row,col to a byte offset in the TI image (E/A code)
-					int r1=row;
-					int r0=col;
-					int r4=r1;
-					r4<<=5;
-					r4|=r1;
-					r4&=0xff07;
-					int r5=r0;
-					r5&=7;
-					r4+=r0;		// byte offset
-					r5-=r4;		// bit offset (not using, could optimize this away)
-
-					int pt = bigdata[off+r4];
-					int ct = bigdata[off+r4+6144];
-					int desired;
-					if (pt&(0x80>>c)) {
-						desired = (ct>>4)&15;
-					} else {
-						desired = ct&15;
-					}
-
-					// now tweak up the colors to match our internal tables
-					if (desired == 15) {
-						desired=0; 
-					} else if (desired == 14) {
-						desired=2;
-					} else if (desired > 1) {
-						desired++;
-					}
-
-					// and set it back
-					nDesiredPixels[c][0] = palinit16[desired].rgbRed;
-					nDesiredPixels[c][1] = palinit16[desired].rgbGreen;
-					nDesiredPixels[c][2] = palinit16[desired].rgbBlue;
-				}
-#endif
-
 				// don't dither if the desired color is pure black or white (helps reduce error spread)	
-				if ((nDesiredPixels[c][0]==0)&&(nDesiredPixels[c][1]==0)&&(nDesiredPixels[c][2]==0)) continue;
-				if ((nDesiredPixels[c][0]==0xff)&&(nDesiredPixels[c][1]==0xff)&&(nDesiredPixels[c][2]==0xff)) continue;
+				if ((nDesiredPixels[c][0]<=8)&&(nDesiredPixels[c][1]<=8)&&(nDesiredPixels[c][2]<=8)) continue;
+				if ((nDesiredPixels[c][0]>=0xf8)&&(nDesiredPixels[c][1]>=0xf8)&&(nDesiredPixels[c][2]>=0xf8)) continue;
 
-#ifndef QUANTIZE_ORDERED2
-#ifndef QUANTIZE_ORDERED
+#ifdef QUANTIZE_ORDERED
+				nDesiredPixels[c][0]+=nDesiredPixels[c][0]*thresholdMap[MAPSEEK(c)][MAPSEEK(row)];
+				nDesiredPixels[c][1]+=nDesiredPixels[c][1]*thresholdMap[MAPSEEK(c)][MAPSEEK(row)];
+				nDesiredPixels[c][2]+=nDesiredPixels[c][2]*thresholdMap[MAPSEEK(c)][MAPSEEK(row)];
+#endif
+#ifdef ERROR_DISTRIBUTION
 				// add in the error table for these pixels
 				// Technically pixel 0 on each row except 0 should be /2, this will do /3, but that is close enough
 				nDesiredPixels[c][0]+=(*pErrLine)/nErrDivisor;		// we don't want to clamp - that induces color shift
 				nDesiredPixels[c][1]+=(*(pErrLine+1))/nErrDivisor;
 				nDesiredPixels[c][2]+=(*(pErrLine+2))/nErrDivisor;
-#else
-				nDesiredPixels[c][0]+=nDesiredPixels[c][0]*thresholdMap[c&3][row&3];
-				nDesiredPixels[c][1]+=nDesiredPixels[c][1]*thresholdMap[c&3][row&3];
-				nDesiredPixels[c][2]+=nDesiredPixels[c][2]*thresholdMap[c&3][row&3];
-#endif
 #endif
 			}
 
@@ -501,7 +470,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 			int nBestBg=0;
 			int nBestPat=0;
 
-#ifndef QUANTIZE_ORDERED
+#ifdef ERROR_DISTRIBUTION
 			float_precision nErrorOutput[6];				// saves the error output for the next horizontal pixel (vertical only calculated on the best match)
 			// zero the error output (will be set to the best match only)
 			for (int i1=0; i1<6; i1++) {
@@ -556,7 +525,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 						float_precision nCurDistance;
 						int nMask=0x80;
 
-#ifndef QUANTIZE_ORDERED
+#ifdef ERROR_DISTRIBUTION
 						float_precision tmpR, tmpG, tmpB, farR, farG, farB;
 						tmpR=0.0;	// these are used before being overwritten, so they must be initialized
 						tmpG=0.0;
@@ -596,16 +565,16 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 
 							// update the total error
 							float_precision r,g,b;
-#ifndef QUANTIZE_ORDERED
-							// get RGB
-							r=(nDesiredPixels[bit][0]+(tmpR/nErrDivisor));
-							g=(nDesiredPixels[bit][1]+(tmpG/nErrDivisor));
-							b=(nDesiredPixels[bit][2]+(tmpB/nErrDivisor));
-#else
 							// get RGB
 							r=nDesiredPixels[bit][0];
 							g=nDesiredPixels[bit][1];
 							b=nDesiredPixels[bit][2];
+
+#ifdef ERROR_DISTRIBUTION
+							// get RGB
+							r+=tmpR/nErrDivisor;
+							g+=tmpG/nErrDivisor;
+							b+=tmpB/nErrDivisor;
 #endif
 
 							// we need the RGB diffs for the error diffusion anyway
@@ -624,7 +593,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 								break;
 							}
 
-#ifndef QUANTIZE_ORDERED
+#ifdef ERROR_DISTRIBUTION
 							// update expected horizontal error based on new actual error
 							tmpR=t1*fPIXD;
 							tmpG=t2*fPIXD;
@@ -649,7 +618,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 						if (nCurDistance < nBestDistance) {
 							// we did! So save the data off
 							nBestDistance = nCurDistance;
-#ifndef QUANTIZE_ORDERED
+#ifdef ERROR_DISTRIBUTION
 							nErrorOutput[0] = tmpR;
 							nErrorOutput[1] = tmpG;
 							nErrorOutput[2] = tmpB;
@@ -666,7 +635,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 			}
 
 			// at this point, we have a best match for this byte
-#ifndef QUANTIZE_ORDERED
+#ifdef ERROR_DISTRIBUTION
 			// first we update the error map to the right with the error output
 			*(pErrLine)+=nErrorOutput[0];
 			*(pErrLine+1)+=nErrorOutput[1];
@@ -683,7 +652,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 			int nMask = 0x80;
 			for (int bit=0; bit<8; bit++) {
 				int nCol;
-#ifndef QUANTIZE_ORDERED
+#ifdef ERROR_DISTRIBUTION
 				float_precision err;
 #endif
 
@@ -705,7 +674,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 
 				*(pOutLine++) = nCol;
 
-#ifndef QUANTIZE_ORDERED
+#ifdef ERROR_DISTRIBUTION
 				// and update the error map 
 				err = nDesiredPixels[bit][0] - pal[nCol][0];		// red
 				*(pErrLine+(bit*3)-3) += err*fPIXA;
@@ -747,7 +716,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval) {
 		}
 	}
 
-#ifndef QUANTIZE_ORDERED
+#ifdef ERROR_DISTRIBUTION
 	// finished! clean up
 	free(pError);
 #endif

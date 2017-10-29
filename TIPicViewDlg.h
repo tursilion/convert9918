@@ -111,6 +111,9 @@ public:
 	afx_msg void OnBnClickedOrdered2();
 	int m_nOrderSlide;
 	CSliderCtrl ctrlOrderSlide;
+	afx_msg void OnBnClickedDiag();
+	afx_msg void OnBnClickedOrdered3();
+	afx_msg void OnBnClickedOrdered4();
 };
 
 //{{AFX_INSERT_LOCATION}}

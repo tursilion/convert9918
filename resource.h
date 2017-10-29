@@ -52,8 +52,10 @@
 #define IDC_ORDERED                     1036
 #define IDC_ORDERED2                    1037
 #define IDC_GAMMA                       1038
-#define IDC_SLIDER1                     1039
 #define IDC_ORDERSLIDE                  1039
+#define IDC_DIAG                        1040
+#define IDC_ORDERED3                    1041
+#define IDC_ORDERED4                    1042
 
 // Next default values for new objects
 // 

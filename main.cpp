@@ -61,6 +61,7 @@ extern int g_UseHalfMulticolor;
 extern int g_MaxMultiDiff;
 extern int g_MaxColDiff;
 extern int g_OrderedDither;
+extern int g_MapSize;
 extern char *cmdFileIn;		// from command line, makes a non-GUI mode
 extern char *cmdFileOut;
 extern HGLOBAL load_gif(char *filename, unsigned int *iWidth, unsigned int *iHeight);
@@ -172,16 +173,18 @@ MYRGBQUAD palinit16[256] = {
 // remembers the default palette for the settings file
 MYRGBQUAD defaultpalinit16[16];
 
-// ordered dither threshold map 
-float_precision g_thresholdMap[4][4] = {
-	1,	9,	3,	11,
-	13,	5,	15,	7,
-	4,	12,	2,	10,
-	16,	8,	14,	6
+// ordered dither threshold maps
+// 3 and 8 didn't look very good due to color clash
+float_precision g_thresholdMap2x2[2][2] = {
+	0, 2,
+	3, 1
 };
-
-// same as above, but centered on 0. Preserves color better, sometimes corrupts though.
-float_precision g_thresholdMap2[4][4];
+float_precision g_thresholdMap4x4[4][4] = {
+	 0,	 8,	 2,	10,
+	12,	 4,	14,	 6,
+	 3,	11,	 1,	 9,
+	15,	 7,	13,	 5
+};
 
 unsigned char orig8[256*192];
 CWnd *pWnd;
@@ -523,11 +526,15 @@ void maincode(int mode, char *pFile, double dark)
 		_set_invalid_parameter_handler(app_handler);
 		// TODO: I really have paths this long. I should fix this.
 
-		// update threshold map
+		// update threshold maps - they're supposed to be fractional
+		for (int i1=0; i1<2; i1++) {
+			for (int i2=0; i2<2; i2++) {
+				g_thresholdMap2x2[i1][i2] /= (float_precision)(4.0);
+			}
+		}
 		for (int i1=0; i1<4; i1++) {
 			for (int i2=0; i2<4; i2++) {
-				--g_thresholdMap[i1][i2];	// 0 is a legal add
-				g_thresholdMap[i1][i2] /= 17.0;
+				g_thresholdMap4x4[i1][i2] /= (float_precision)(16.0);
 			}
 		}
 	}

@@ -46,10 +46,9 @@ extern int PIXA,PIXB,PIXC,PIXD,PIXE,PIXF;
 extern CWnd *pWnd;
 extern bool g_bDisplayPalette;			// draw palette on line
 extern int g_OrderedDither;
+extern int g_MapSize;
 extern float_precision g_LumaEmphasis;
 extern float_precision g_Gamma;
-extern float_precision g_thresholdMap[4][4];
-extern float_precision g_thresholdMap2[4][4];
 
 // returns the distance squared on the YUV scale between two RGB entries
 float_precision yuvdist(float_precision r1, float_precision g1, float_precision b1, float_precision r2, float_precision g2, float_precision b2) {
@@ -114,7 +113,7 @@ void makeY(float_precision r, float_precision g, float_precision b, float_precis
 #undef QUANTIZE_FLICKER
 #undef QUANTIZE_PERCEPTUAL
 #undef QUANTIZE_ORDERED
-#undef QUANTIZE_ORDERED2
+#define ERROR_DISTRIBUTION
 #include "quantize_common.h"
 
 // standard mode with perceptual color matching
@@ -123,7 +122,7 @@ void makeY(float_precision r, float_precision g, float_precision b, float_precis
 #undef QUANTIZE_FLICKER
 #define QUANTIZE_PERCEPTUAL
 #undef QUANTIZE_ORDERED
-#undef QUANTIZE_ORDERED2
+#define ERROR_DISTRIBUTION
 #include "quantize_common.h"
 
 // standard mode ordered dither
@@ -132,7 +131,7 @@ void makeY(float_precision r, float_precision g, float_precision b, float_precis
 #undef QUANTIZE_FLICKER
 #undef QUANTIZE_PERCEPTUAL
 #define QUANTIZE_ORDERED
-#undef QUANTIZE_ORDERED2
+#undef ERROR_DISTRIBUTION
 #include "quantize_common.h"
 
 // standard mode with perceptual color matching ordered dither
@@ -141,16 +140,25 @@ void makeY(float_precision r, float_precision g, float_precision b, float_precis
 #undef QUANTIZE_FLICKER
 #define QUANTIZE_PERCEPTUAL
 #define QUANTIZE_ORDERED
-#undef QUANTIZE_ORDERED2
+#undef ERROR_DISTRIBUTION
 #include "quantize_common.h"
 
-// standard mode "ordered2" dither
+// standard mode ordered dither with error dist
 #undef quantize_common
 #define quantize_common quantize_new_ordered2
 #undef QUANTIZE_FLICKER
+#undef QUANTIZE_PERCEPTUAL
+#define QUANTIZE_ORDERED
+#define ERROR_DISTRIBUTION
+#include "quantize_common.h"
+
+// standard mode with perceptual color matching ordered dither with error dist
+#undef quantize_common
+#define quantize_common quantize_new_percept_ordered2
+#undef QUANTIZE_FLICKER
 #define QUANTIZE_PERCEPTUAL
 #define QUANTIZE_ORDERED
-#define QUANTIZE_ORDERED2
+#define ERROR_DISTRIBUTION
 #include "quantize_common.h"
 
 // half-multicolor mode
@@ -159,7 +167,7 @@ void makeY(float_precision r, float_precision g, float_precision b, float_precis
 #define QUANTIZE_FLICKER
 #undef QUANTIZE_PERCEPTUAL
 #undef QUANTIZE_ORDERED
-#undef QUANTIZE_ORDERED2
+#define ERROR_DISTRIBUTION
 #include "quantize_common.h"
 
 // half-multicolor mode with perceptual color matching
@@ -168,7 +176,7 @@ void makeY(float_precision r, float_precision g, float_precision b, float_precis
 #define QUANTIZE_FLICKER
 #define QUANTIZE_PERCEPTUAL
 #undef QUANTIZE_ORDERED
-#undef QUANTIZE_ORDERED2
+#define ERROR_DISTRIBUTION
 #include "quantize_common.h"
 
 // half-multicolor mode ordered dither
@@ -177,7 +185,7 @@ void makeY(float_precision r, float_precision g, float_precision b, float_precis
 #define QUANTIZE_FLICKER
 #undef QUANTIZE_PERCEPTUAL
 #define QUANTIZE_ORDERED
-#undef QUANTIZE_ORDERED2
+#undef ERROR_DISTRIBUTION
 #include "quantize_common.h"
 
 // half-multicolor mode with perceptual color matching ordered dither
@@ -186,14 +194,23 @@ void makeY(float_precision r, float_precision g, float_precision b, float_precis
 #define QUANTIZE_FLICKER
 #define QUANTIZE_PERCEPTUAL
 #define QUANTIZE_ORDERED
-#undef QUANTIZE_ORDERED2
+#undef ERROR_DISTRIBUTION
 #include "quantize_common.h"
 
-// half-multicolor mode "ordered2" dither
+// half-multicolor mode ordered dither with error dist
 #undef quantize_common
 #define quantize_common quantize_new_halfmult_ordered2
-#undef QUANTIZE_FLICKER
+#define QUANTIZE_FLICKER
+#undef QUANTIZE_PERCEPTUAL
+#define QUANTIZE_ORDERED
+#define ERROR_DISTRIBUTION
+#include "quantize_common.h"
+
+// half-multicolor mode with perceptual color matching ordered dither with error dist
+#undef quantize_common
+#define quantize_common quantize_new_halfmult_percept_ordered2
+#define QUANTIZE_FLICKER
 #define QUANTIZE_PERCEPTUAL
 #define QUANTIZE_ORDERED
-#define QUANTIZE_ORDERED2
+#define ERROR_DISTRIBUTION
 #include "quantize_common.h"

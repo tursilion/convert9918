@@ -56,11 +56,12 @@ recommended defaults:
 Atkinson - sets a modified Atkinson dither
 Floyd-Stein - sets Floyd-Steinberg dithering
 Pattern - sets a halt-tone-like dither (every other pixel)
+Diag    - similar to Atkinson, but a modified pattern that
+          tends to produce diagonal hash-line lines
 Order1 - ignores the pattern and uses an aligned/ordered dither. 
-           This tends to brighten the image.
-Order2 - like order1, but the pattern is centered around 0
-         in order to preserve brightness. This can sometimes
-		 cause unpleasant color shift.
+         The slider underneath can be used to brighten/darken
+Order2 - like order1, but allows for error distribution as well.
+         Values should be kept equal and small for best results.
 No Dither - disables dithering
 
 Note that if the total of all values entered is less than 16,
@@ -437,9 +438,9 @@ command line. Strings are all case-sensitive.
 INI File
 --------
 
-On exit, all current settings are saved in convert9918.ini. This is still being tested,
-I don't know for sure that it can be read back successfully. Note, however, that the palette
-may be editted in the INI file. The byte order is R,G,B,unused.
+On exit, all current settings are saved in convert9918.ini. This is still being tested.
+Note, however, that the palette may be editted in the INI file. 
+The byte order is R,G,B,unused.
 
 //
 // (C) 2017 Mike Brent aka Tursi aka HarmlessLion.com

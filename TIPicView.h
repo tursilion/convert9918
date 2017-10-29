@@ -73,10 +73,6 @@ void debug(char *s, ...);
 // This macro basically reduces to 4 bits of accuracy, but rounds up and shifts back to the 8-bit RGB range (so high nibble only)
 #define MakeRoundedRGB(x) ((((((int)(x)<256-8)?(x)+8:(x))>>4)<<4)+8)
 
-// threshold map for ordered dither
-extern float_precision g_thresholdMap[4][4];
-extern float_precision g_thresholdMap2[4][4];
-
 /////////////////////////////////////////////////////////////////////////////
 
 //{{AFX_INSERT_LOCATION}}

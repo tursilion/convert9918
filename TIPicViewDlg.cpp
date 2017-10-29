@@ -8,8 +8,6 @@
 #include "C:\WORK\imgsource\4.0\islibs40_vs05\ISource.h"
 #include "xbtest.h"
 
-unsigned char *bigdata = NULL;
-
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -37,6 +35,7 @@ extern int g_StaticColors;
 extern int g_MatchColors;
 extern bool g_bStaticByPopularity;
 extern int g_OrderedDither;
+extern int g_MapSize;
 extern unsigned char scanlinepal[192][16][4];
 extern float_precision g_PercepR, g_PercepG, g_PercepB;
 extern float_precision g_LumaEmphasis;
@@ -284,6 +283,9 @@ BEGIN_MESSAGE_MAP(CTIPicViewDlg, CDialog)
 	ON_WM_TIMER()
 	ON_BN_CLICKED(IDC_ORDERED, &CTIPicViewDlg::OnBnClickedOrdered)
 	ON_BN_CLICKED(IDC_ORDERED2, &CTIPicViewDlg::OnBnClickedOrdered2)
+	ON_BN_CLICKED(IDC_DIAG, &CTIPicViewDlg::OnBnClickedDiag)
+	ON_BN_CLICKED(IDC_ORDERED3, &CTIPicViewDlg::OnBnClickedOrdered3)
+	ON_BN_CLICKED(IDC_ORDERED4, &CTIPicViewDlg::OnBnClickedOrdered4)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -356,26 +358,15 @@ BOOL CTIPicViewDlg::OnInitDialog()
 	PrepareData();
 
 	// interface to the dithering ordered buttons
-	if (g_OrderedDither) {
+	if (g_OrderedDither != 0) {
 		EnableDitherCtrls(false);
-		if (g_OrderedDither == 2) {
-			SendDlgItemMessage(IDC_ORDERED2, BM_SETCHECK, BST_CHECKED, 0);
-		} else {
-			SendDlgItemMessage(IDC_ORDERED, BM_SETCHECK, BST_CHECKED, 0);
+		int option = g_OrderedDither + (g_MapSize==4 ? 2: 0);
+		switch (option) {
+		case 1: SendDlgItemMessage(IDC_ORDERED, BM_SETCHECK, BST_CHECKED, 0); break;
+		case 2: SendDlgItemMessage(IDC_ORDERED2, BM_SETCHECK, BST_CHECKED, 0); break;
+		case 3: SendDlgItemMessage(IDC_ORDERED3, BM_SETCHECK, BST_CHECKED, 0); break;
+		case 4: SendDlgItemMessage(IDC_ORDERED4, BM_SETCHECK, BST_CHECKED, 0); break;
 		}
-	}
-
-	// load big data if we can
-	FILE *fp=fopen("bigdata.dat", "rb");
-	if (NULL != fp) {
-		fseek(fp, 0, SEEK_END);
-		int s = ftell(fp);
-		bigdata=(unsigned char*)malloc(s);
-		fseek(fp, 0, SEEK_SET);
-		fread(bigdata, 1, s, fp);
-		fclose(fp);
-	} else if (g_OrderedDither==2) {
-		printf("bigdata.dat not available, ordered2 not available.\n");
 	}
 
 	// hacky command line interface
@@ -386,71 +377,6 @@ BOOL CTIPicViewDlg::OnInitDialog()
 		OnButton4();		// save
 		EndDialog(IDOK);	// and quit
 	}
-
-#if 0
-	// NOT PERMANENT
-	// Create the 4096 dithered images we'll use to create the big dither map
-	// there's also a hack in maincode() to make this work
-	char buf[128];
-	cmdFileOut = buf;
-	// /create/delete the old file
-	fp=fopen("bigdata.dat", "wb");
-	fclose(fp);
-
-	for (int r=0; r<16; ++r) {
-		for (int g=0; g<16; ++g) {
-			for (int b=0; b<16; ++b) {
-				sprintf(buf, "4096Colors\\dat%X%X%X", r, g, b);
-#if 0
-				// create the dithered image- outputs "datRGB.*"
-				LaunchMain(0x1000|(r<<8)|(g<<4)|(b), NULL);
-				OnButton4();
-#else
-				// condense the output "datRGB.*" files into bigdata.dat
-				unsigned char dat[6144];
-				unsigned char *p = (unsigned char*)(buf+strlen(buf));	// point to the NUL
-				strcat(buf, ".TIAP");				// pattern first
-				FILE *fp=fopen(buf, "rb");
-				if (NULL == fp) {
-					printf("failed to open %s\n", buf);
-					abort();
-				}
-				fseek(fp, 128, SEEK_SET);
-				fread(dat, 1, 6144, fp);
-				fclose(fp);
-				fp=fopen("bigdata.dat", "ab");
-				if (NULL == fp) {
-					printf("failed to open bigdata.dat\n");
-					abort();
-				}
-				fwrite(dat, 1, 6144, fp);
-				fclose(fp);
-
-				*p = '\0';
-				strcat(buf, ".TIAC");				// pattern first
-				fp=fopen(buf, "rb");
-				if (NULL == fp) {
-					printf("failed to open %s\n", buf);
-					abort();
-				}
-				fseek(fp, 128, SEEK_SET);
-				fread(dat, 1, 6144, fp);
-				fclose(fp);
-				fp=fopen("bigdata.dat", "ab");
-				if (NULL == fp) {
-					printf("failed to open bigdata.dat\n");
-					abort();
-				}
-				fwrite(dat, 1, 6144, fp);
-				fclose(fp);
-
-#endif
-
-			}
-		}
-	}
-	EndDialog(IDOK);
-#endif
 
 	InterlockedExchange(&cs, 0);		// no thread running yet
 	
@@ -2017,15 +1943,14 @@ void CTIPicViewDlg::OnBnClickedFloyd()
 void CTIPicViewDlg::OnBnClickedAtkinson()
 {
 	UpdateData(true);
-	m_pixelA=1;
-	m_pixelB=3;
+	m_pixelA=2;
+	m_pixelB=2;
 	m_pixelC=2;
-	m_pixelD=3;
+	m_pixelD=2;
 	m_pixelE=1;
 	m_pixelF=1;
 	UpdateData(false);
 	untoggleOrdered();
-
 }
 
 void CTIPicViewDlg::OnBnClickedPattern()
@@ -2041,6 +1966,18 @@ void CTIPicViewDlg::OnBnClickedPattern()
 	untoggleOrdered();
 }
 
+void CTIPicViewDlg::OnBnClickedDiag()
+{
+	UpdateData(true);
+	m_pixelA=1;
+	m_pixelB=3;
+	m_pixelC=2;
+	m_pixelD=3;
+	m_pixelE=1;
+	m_pixelF=1;
+	UpdateData(false);
+	untoggleOrdered();
+}
 
 void CTIPicViewDlg::OnBnClickedNodither()
 {
@@ -2059,6 +1996,8 @@ void CTIPicViewDlg::untoggleOrdered()
 {
 	SendDlgItemMessage(IDC_ORDERED, BM_SETCHECK, BST_UNCHECKED, 0);
 	SendDlgItemMessage(IDC_ORDERED2, BM_SETCHECK, BST_UNCHECKED, 0);
+	SendDlgItemMessage(IDC_ORDERED3, BM_SETCHECK, BST_UNCHECKED, 0);
+	SendDlgItemMessage(IDC_ORDERED4, BM_SETCHECK, BST_UNCHECKED, 0);
 	EnableDitherCtrls(TRUE);
 	g_OrderedDither = 0;
 }
@@ -2067,9 +2006,12 @@ void CTIPicViewDlg::OnBnClickedOrdered()
 {
 	// this one is a toggle
 	SendDlgItemMessage(IDC_ORDERED2, BM_SETCHECK, BST_UNCHECKED, 0);
+	SendDlgItemMessage(IDC_ORDERED3, BM_SETCHECK, BST_UNCHECKED, 0);
+	SendDlgItemMessage(IDC_ORDERED4, BM_SETCHECK, BST_UNCHECKED, 0);
 	if (BST_CHECKED == SendDlgItemMessage(IDC_ORDERED, BM_GETCHECK, 0, 0)) {
 		EnableDitherCtrls(FALSE);
 		g_OrderedDither = 1;
+		g_MapSize = 2;
 	} else {
 		EnableDitherCtrls(TRUE);
 		g_OrderedDither = 0;
@@ -2078,18 +2020,69 @@ void CTIPicViewDlg::OnBnClickedOrdered()
 
 void CTIPicViewDlg::OnBnClickedOrdered2()
 {
-	if (NULL != bigdata) {
-		// this one is a toggle
-		SendDlgItemMessage(IDC_ORDERED, BM_SETCHECK, BST_UNCHECKED, 0);
-		if (BST_CHECKED == SendDlgItemMessage(IDC_ORDERED2, BM_GETCHECK, 0, 0)) {
-			EnableDitherCtrls(FALSE);
-			g_OrderedDither = 2;
-		} else {
-			EnableDitherCtrls(TRUE);
-			g_OrderedDither = 0;
-		}
+	// this one is a toggle but keeps the dither up
+	SendDlgItemMessage(IDC_ORDERED, BM_SETCHECK, BST_UNCHECKED, 0);
+	SendDlgItemMessage(IDC_ORDERED3, BM_SETCHECK, BST_UNCHECKED, 0);
+	SendDlgItemMessage(IDC_ORDERED4, BM_SETCHECK, BST_UNCHECKED, 0);
+	if (BST_CHECKED == SendDlgItemMessage(IDC_ORDERED2, BM_GETCHECK, 0, 0)) {
+		EnableDitherCtrls(TRUE);
+		g_OrderedDither = 2;
+		g_MapSize = 2;
+
+		UpdateData(true);
+		m_pixelA=1;
+		m_pixelB=2;
+		m_pixelC=2;
+		m_pixelD=2;
+		m_pixelE=0;
+		m_pixelF=0;
+		UpdateData(false);
+
 	} else {
-		AfxMessageBox("bigdata.dat not available.", MB_OK);
+		EnableDitherCtrls(TRUE);
+		g_OrderedDither = 0;
+	}
+}
+
+void CTIPicViewDlg::OnBnClickedOrdered3()
+{
+	// this one is a toggle
+	SendDlgItemMessage(IDC_ORDERED, BM_SETCHECK, BST_UNCHECKED, 0);
+	SendDlgItemMessage(IDC_ORDERED2, BM_SETCHECK, BST_UNCHECKED, 0);
+	SendDlgItemMessage(IDC_ORDERED4, BM_SETCHECK, BST_UNCHECKED, 0);
+	if (BST_CHECKED == SendDlgItemMessage(IDC_ORDERED3, BM_GETCHECK, 0, 0)) {
+		EnableDitherCtrls(FALSE);
+		g_OrderedDither = 1;
+		g_MapSize = 4;
+	} else {
+		EnableDitherCtrls(TRUE);
+		g_OrderedDither = 0;
+	}
+}
+
+void CTIPicViewDlg::OnBnClickedOrdered4()
+{
+	// this one is a toggle but keeps the dither up
+	SendDlgItemMessage(IDC_ORDERED, BM_SETCHECK, BST_UNCHECKED, 0);
+	SendDlgItemMessage(IDC_ORDERED2, BM_SETCHECK, BST_UNCHECKED, 0);
+	SendDlgItemMessage(IDC_ORDERED3, BM_SETCHECK, BST_UNCHECKED, 0);
+	if (BST_CHECKED == SendDlgItemMessage(IDC_ORDERED4, BM_GETCHECK, 0, 0)) {
+		EnableDitherCtrls(TRUE);
+		g_OrderedDither = 2;
+		g_MapSize = 4;
+
+		UpdateData(true);
+		m_pixelA=1;
+		m_pixelB=2;
+		m_pixelC=2;
+		m_pixelD=2;
+		m_pixelE=0;
+		m_pixelF=0;
+		UpdateData(false);
+
+	} else {
+		EnableDitherCtrls(TRUE);
+		g_OrderedDither = 0;
 	}
 }
 
@@ -2145,4 +2138,3 @@ void CTIPicViewDlg::OnTimer(UINT_PTR nIDEvent)
 		}
 	}
 }
-

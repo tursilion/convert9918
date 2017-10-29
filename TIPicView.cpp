@@ -76,6 +76,7 @@ int g_AccumulateErrors=1;		// accumulate errors instead of averaging (old method
 int g_MaxMultiDiff=95;			// default percentage that we allow colors to differ luminence by (255=100%)
 int g_MaxColDiff=1;				// max color shift allowed (>15 is pretty pointless - percentage of color space)
 int g_OrderedDither=0;			// whether to use the built-in ordered dither 1 or 2
+int g_MapSize=2;				// whether ordered dither uses 2x2 or 4x4 maps
 float_precision g_PercepR=0.30, g_PercepG=0.52, g_PercepB=0.18;
 float_precision g_LumaEmphasis = 1.2;		// much like the perceptual shifts, this emphasizes (or de-emphasizes if less than 1) the luma component
 float_precision g_Gamma = 1.0;
@@ -90,16 +91,18 @@ extern int ScaleMode;
 extern bool fVerbose;
 
 void ConvertToHalfMulticolor(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal);
-void quantize_new(BYTE* pRGB, BYTE* p8Bit, double dark);
-void quantize_new_percept(BYTE* pRGB, BYTE* p8Bit, double dark);
-void quantize_new_halfmult(BYTE* pRGB, BYTE* p8Bit, double dark);
-void quantize_new_halfmult_percept(BYTE* pRGB, BYTE* p8Bit, double dark);
-void quantize_new_ordered(BYTE* pRGB, BYTE* p8Bit, double dark);
-void quantize_new_ordered2(BYTE* pRGB, BYTE* p8Bit, double dark);
-void quantize_new_percept_ordered(BYTE* pRGB, BYTE* p8Bit, double dark);
-void quantize_new_halfmult_ordered(BYTE* pRGB, BYTE* p8Bit, double dark);
-void quantize_new_halfmult_ordered2(BYTE* pRGB, BYTE* p8Bit, double dark);
-void quantize_new_halfmult_percept_ordered(BYTE* pRGB, BYTE* p8Bit, double dark);
+void quantize_new(BYTE* pRGB, BYTE* p8Bit, double dark, int mapsize);
+void quantize_new_percept(BYTE* pRGB, BYTE* p8Bit, double dark, int mapsize);
+void quantize_new_halfmult(BYTE* pRGB, BYTE* p8Bit, double dark, int mapsize);
+void quantize_new_halfmult_percept(BYTE* pRGB, BYTE* p8Bit, double dark, int mapsize);
+void quantize_new_ordered(BYTE* pRGB, BYTE* p8Bit, double dark, int mapsize);
+void quantize_new_percept_ordered(BYTE* pRGB, BYTE* p8Bit, double dark, int mapsize);
+void quantize_new_ordered2(BYTE* pRGB, BYTE* p8Bit, double dark, int mapsize);
+void quantize_new_percept_ordered2(BYTE* pRGB, BYTE* p8Bit, double dark, int mapsize);
+void quantize_new_halfmult_ordered(BYTE* pRGB, BYTE* p8Bit, double dark, int mapsize);
+void quantize_new_halfmult_percept_ordered(BYTE* pRGB, BYTE* p8Bit, double dark, int mapsize);
+void quantize_new_halfmult_ordered2(BYTE* pRGB, BYTE* p8Bit, double dark, int mapsize);
+void quantize_new_halfmult_percept_ordered2(BYTE* pRGB, BYTE* p8Bit, double dark, int mapsize);
 
 #ifdef ALLOWHAM4
 void ConvertToHAM4(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal);
@@ -304,6 +307,8 @@ void CTIPicViewApp::loadSettings() {
 	readint(g_MaxMultiDiff, "MaxMultiDiff");
 	readint(g_MaxColDiff, "MaxColDiff");
 	readint(g_OrderedDither, "OrderedDither");
+	readint(g_MapSize, "MapSize");
+	if ((g_MapSize!=2)&&(g_MapSize!=4)) g_MapSize=2;
 	readfloat(g_PercepR, "PerceptR");
 	readfloat(g_PercepG, "PerceptG");
 	readfloat(g_PercepB, "PerceptB");
@@ -347,6 +352,7 @@ void CTIPicViewApp::saveSettings() {
 	writeint(g_MaxMultiDiff, "MaxMultiDiff");
 	writeint(g_MaxColDiff, "MaxColDiff");
 	writeint(g_OrderedDither, "OrderedDither");
+	writeint(g_MapSize, "MapSize");
 	writefloat(g_PercepR, "PerceptR");
 	writefloat(g_PercepG, "PerceptG");
 	writefloat(g_PercepB, "PerceptB");
@@ -558,37 +564,37 @@ void MYRGBTo8BitDithered(BYTE *pRGB, BYTE *p8Bit, MYRGBQUAD *inpal, double darke
 	if (g_UseHalfMulticolor) {
 		if (g_Perceptual) {
 			if (g_OrderedDither == 2) {
-				quantize_new_halfmult_ordered2(pRGB, p8Bit, darken);
+				quantize_new_halfmult_percept_ordered2(pRGB, p8Bit, darken, g_MapSize);
 			} else if (g_OrderedDither) {
-				quantize_new_halfmult_percept_ordered(pRGB, p8Bit, darken);
+				quantize_new_halfmult_percept_ordered(pRGB, p8Bit, darken, g_MapSize);
 			} else {
-				quantize_new_halfmult_percept(pRGB, p8Bit, darken);
+				quantize_new_halfmult_percept(pRGB, p8Bit, darken, g_MapSize);
 			}
 		} else {
 			if (g_OrderedDither == 2) {
-				quantize_new_halfmult_ordered2(pRGB, p8Bit, darken);
+				quantize_new_halfmult_ordered2(pRGB, p8Bit, darken, g_MapSize);
 			} else if (g_OrderedDither) {
-				quantize_new_halfmult_ordered(pRGB, p8Bit, darken);
+				quantize_new_halfmult_ordered(pRGB, p8Bit, darken, g_MapSize);
 			} else {
-				quantize_new_halfmult(pRGB, p8Bit, darken);
+				quantize_new_halfmult(pRGB, p8Bit, darken, g_MapSize);
 			}
 		}
 	} else {
 		if (g_Perceptual) {
 			if (g_OrderedDither == 2) {
-				quantize_new_ordered2(pRGB, p8Bit, darken);
+				quantize_new_percept_ordered2(pRGB, p8Bit, darken, g_MapSize);
 			} else if (g_OrderedDither) {
-				quantize_new_percept_ordered(pRGB, p8Bit, darken);
+				quantize_new_percept_ordered(pRGB, p8Bit, darken, g_MapSize);
 			} else {
-				quantize_new_percept(pRGB, p8Bit, darken);
+				quantize_new_percept(pRGB, p8Bit, darken, g_MapSize);
 			}
 		} else {
 			if (g_OrderedDither == 2) {
-				quantize_new_ordered2(pRGB, p8Bit, darken);
+				quantize_new_ordered2(pRGB, p8Bit, darken, g_MapSize);
 			} else if (g_OrderedDither) {
-				quantize_new_ordered(pRGB, p8Bit, darken);
+				quantize_new_ordered(pRGB, p8Bit, darken, g_MapSize);
 			} else {
-				quantize_new(pRGB, p8Bit, darken);
+				quantize_new(pRGB, p8Bit, darken, g_MapSize);
 			}
 		}
 	}
@@ -672,7 +678,8 @@ void ConvertToHalfMulticolor(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal
 					} else {
 						diff = lum2 - lum1;
 					}
-					if (diff > (float_precision)g_MaxMultiDiff/100.0) continue;
+					// diff should be from 0-256
+					if ((diff/256.0) > (float_precision)g_MaxMultiDiff/100.0) continue;
 				}
 
 				for (int nSubY = 0; nSubY < 4; nSubY++) {
