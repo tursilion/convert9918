@@ -406,6 +406,7 @@
     <None Include="examples\XB_Bitmap_Notes.txt" />
     <None Include="examples\XB_Program.txt" />
     <None Include="ImgSource.txt" />
+    <None Include="readme.md" />
     <None Include="res\TIPicView.ico" />
     <None Include="res\TIPicView.rc2" />
     <None Include="ReadMe.txt" />

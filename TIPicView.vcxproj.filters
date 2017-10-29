@@ -116,5 +116,6 @@
       <Filter>ExampleCode</Filter>
     </None>
     <None Include="ImgSource.txt" />
+    <None Include="readme.md" />
   </ItemGroup>
 </Project>

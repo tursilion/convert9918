@@ -777,6 +777,27 @@ ohJustSkipTheLoad:
 			}			
 		}
 
+#if 0
+		// adapt to lower bitdepth to reduce noise (by throwing away data)
+		// try 16 bit (565) for now... always an RGB operation
+		// doesn't help much
+		{
+			unsigned char *pBuf = (unsigned char*)hBuffer;
+			for (unsigned int idx=0; idx<inWidth*inHeight*3; idx+=3) {
+				int r,g,b;
+				r=pBuf[idx];
+				g=pBuf[idx+1];
+				b=pBuf[idx+2];
+				r=r&0xf8;
+				g=g&0xfc;
+				b=b&0xf8;
+				pBuf[idx]=r;
+				pBuf[idx+1]=g;
+				pBuf[idx+2]=b;
+			}
+		}
+#endif
+
 		// scale the image (this is okay for TI Artist - nop!)
 		// Color reduce the image to the TI palette (this part does the most damage ;) )
 		memcpy(pal, palinit16, sizeof(pal));
