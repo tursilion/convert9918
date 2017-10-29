@@ -3,7 +3,7 @@ This depot is not guaranteed to build at any given time - it's my bleeding edge 
 Convert9918 v168
 ================
 
-![Screenshot](https://github.com/tursilion/convert9918/raw/master/dist/Convert9918_1.jpg)
+![Screenshot](https://github.com/tursilion/convert9918/raw/master/dist/Convert9918_1.png)
 
 This program can convert most modern graphics into a form compatible with the TMS9918A bitmap mode. It supports a drag-and-drop interface and handles resizing and scaling, several forms of user-configurable dithering, adjustable color selection, and more. 
 
