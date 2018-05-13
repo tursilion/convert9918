@@ -9,8 +9,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <process.h>
-#include "C:\WORK\imgsource\4.0\islibs40_vs05\ISource.h"
-#include "C:\WORK\imgsource\2.1\src\ISLib\isarray.h"
+#include "D:\WORK\imgsource\4.0\islibs40_vs05\ISource.h"
+#include "D:\WORK\imgsource\2.1\src\ISLib\isarray.h"
 #include <windows.h>
 #include <list>
 #include <cmath>
@@ -407,12 +407,16 @@ void GetConsole() {
 		AllocConsole();
 	}
 
+#if 1
+    freopen("CONOUT$", "w", stdout);
+#else
 	int hCrt, i;
 	FILE *hf;
 	hCrt = _open_osfhandle((long) GetStdHandle(STD_OUTPUT_HANDLE), _O_TEXT);
 	hf = _fdopen( hCrt, "w" );
 	*stdout = *hf;
 	i = setvbuf( stdout, NULL, _IONBF, 0 ); 
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////

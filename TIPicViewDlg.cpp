@@ -5,7 +5,7 @@
 #include <Windows.h>
 #include "TIPicView.h"
 #include "TIPicViewDlg.h"
-#include "C:\WORK\imgsource\4.0\islibs40_vs05\ISource.h"
+#include "D:\WORK\imgsource\4.0\islibs40_vs05\ISource.h"
 #include "xbtest.h"
 
 #ifdef _DEBUG

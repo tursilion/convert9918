@@ -32,7 +32,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 	} else if (mapSize == 4) {
 		maskval = 3;
 	} else {
-		printf("Bad map size %s\n", mapSize);
+		printf("Bad map size %d\n", mapSize);
 		return;
 	}
 

@@ -12,7 +12,7 @@
 #include <crtdbg.h>
 
 #include "tipicview.h"
-#include "C:\WORK\imgsource\4.0\islibs40_vs05\ISource.h"
+#include "D:\WORK\imgsource\4.0\islibs40_vs05\ISource.h"
 #include "2passscale.h"
 #include "TIPicViewDlg.h"
 
