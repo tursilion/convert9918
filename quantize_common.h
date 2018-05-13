@@ -322,7 +322,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 								pop[idx]+=1.0-dist;
 							}
 						}
-						if (row<255) {
+						if (row<191) {
 							int off=((row+1)*256*3)+(idx-1)*3;	// down and to the left
 							if (idx > 0) {
 								float_precision dist = sqrt((double)yuvdist(*(pRGB+off), *(pRGB+off+1), *(pRGB+off+2), 
