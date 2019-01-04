@@ -71,7 +71,14 @@ public:
 void debug(char *s, ...);
 
 // This macro basically reduces to 4 bits of accuracy, but rounds up and shifts back to the 8-bit RGB range (so high nibble only)
-#define MakeRoundedRGB(x) ((((((int)(x)<256-8)?(x)+8:(x))>>4)<<4)+8)
+// I think this is causing a lot of my streaking...
+// so for now, we are working in true color, which is great, but we are generating truecolor palettes when
+// the chip can only do 12-bit color. So we'll get loss of detail and banding that we really should be
+// dithering. But when we do this correction in the palette, it sometimes results in different palette selection.
+// So.. do we do this after the palette selection but before the dither?
+//#define MakeRoundedRGB(x) ((((((int)(x)<256-8)?(x)+8:(x))>>4)<<4)+8)
+#define MakeRoundedRGB(x) (x)
+#define MakeTrulyRoundedRGB(x) ((((((int)(x)<256-8)?(x)+8:(x))>>4)<<4)+8)
 
 /////////////////////////////////////////////////////////////////////////////
 

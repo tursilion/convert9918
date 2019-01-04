@@ -94,10 +94,11 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 
 				int nColCount = 0;
 
-				// if we are doing a per-line palette, fix the 4 most popular colors to reduce horizontal lines
+				// if we are doing a per-line palette, fix the 4* most popular colors to reduce horizontal lines
 				// rather than 'first' color, we should probably save 2-4 colors by popularity and
 				// only change the rest. 
 				// I tried keeping the 4 most DISTINCT colors per line, that was worse than this approach.
+                // * - not 4 anymore, user specified, and usually zero these days
 				memset(cols, 0, sizeof(cols));
 				for (row=0; row<192; row++) {
 					for (col=0; col<256; col++) {
@@ -268,6 +269,8 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 						// we did find one. If we didn't, then it doesn't really matter what the rest of the palette does,
 						// we can skip the median cut, really.
 						// but in this case, remap any such colors to the one we found
+                        // TODO: this would impact median cut and popularity by skewing that one color's value...
+                        // But maybe we can just delete the fixed color concept anyway now...
 						for (int idx=0; idx<256; idx++) {
 							for (int i2=0; i2<nFixedColors; i2++) {
 								if ((MakeRoundedRGB(points[idx].x[0]) == pal[i2][0]) &&
@@ -289,6 +292,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 					// -2 line popularity
 					// this version merges the closest colors until we only have the correct number left
 					// but it weights them by local popularity, including the line above
+                    // This is not too bad...
 					float_precision pop[256];		// popularity of each pixel in the row (or 3 rows in the other case)
 					// in the first pass, each pixel gets 3 points, plus bonus based on how close to the pixels above it is
 					// we weight this pixel with the rows above and below, like so:
@@ -349,8 +353,10 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 						for (int idx2=idx+1; idx2<256; idx2++) {
 							if ((pop[idx]==0)||(pop[idx2]==0)) continue;
 
-							// don't round at this early state
-							if (0 == memcmp(points[idx].x, points[idx2].x, 3)) {
+                            // we compare exact match
+							if ( ((points[idx].x[0]) == (points[idx2].x[0])) && 
+								 ((points[idx].x[1]) == (points[idx2].x[1])) &&
+								 ((points[idx].x[2]) == (points[idx2].x[2])) ) {
 								pop[idx]+=pop[idx2];
 								pop[idx2]=0;
 								nCols--;
@@ -392,6 +398,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 							if ( (MakeRoundedRGB(points[mindistp1].x[0]) == MakeRoundedRGB(points[idx].x[0])) && 
 								 (MakeRoundedRGB(points[mindistp1].x[1]) == MakeRoundedRGB(points[idx].x[1])) &&
 								 (MakeRoundedRGB(points[mindistp1].x[2]) == MakeRoundedRGB(points[idx].x[2])) ) {
+                                    float_precision oldp = pop[idx];
 									pop[idx]+=pop[mindistp1];	// we can't load into mindistp1 because there may be others
 									pop[mindistp1]=0;
 									nCols--;
@@ -399,10 +406,10 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 							}
 						}
 					}
-					// save off the final colors
+					// save off the final colors - this gets us down to 15-nFixed final colors from 256
 					int idx=g_StaticColors; 
 					for (int idx2=0; idx2<256; idx2++) {
-						if (pop[idx2]==0) continue;
+						if (pop[idx2]==0) continue;     // skip colors marked unused
 						pal[idx][0]=MakeRoundedRGB(points[idx2].x[0]);
 						pal[idx][1]=MakeRoundedRGB(points[idx2].x[1]);
 						pal[idx][2]=MakeRoundedRGB(points[idx2].x[2]);
@@ -412,8 +419,24 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 				}
 			}
 
+#if 0
+            // TODO: this makes it streaky!
+            // Now that we selected a palette via true color, convert the palette to 12 bits
+            // so that we can dither the image correctly.
+            // Assuming a linear spread from 0.0 to 1.0 with 16 steps, then converted back to
+            // 8 bits, the actual 12-bit palette values map back to 24-bit with each gun with the
+            // least significant nibble zeroed, as long as you don't mind >F becomes >FF instead of >100
+            // this means it's safe to reconvert even if a value was already 12 bits, at least
+			for (int idx=0; idx<16; idx++) {
+				pal[idx][0]=MakeTrulyRoundedRGB(pal[idx][0]);
+				pal[idx][1]=MakeTrulyRoundedRGB(pal[idx][1]);
+				pal[idx][2]=MakeTrulyRoundedRGB(pal[idx][2]);
+				makeYUV(pal[idx][0], pal[idx][1], pal[idx][2], YUVpal[idx][0], YUVpal[idx][1], YUVpal[idx][2]);
+			}
+#endif
+
 			// save this entry off
-			memcpy(&scanlinepal[row], pal, sizeof(pal[0][0])*4*16);
+			memcpy(&scanlinepal[row], pal, sizeof(pal[0][0])*4*16); // 4 for RGB0, 16 for 16 colors
 			// copy into winpal for display
 			for (int idx=0; idx<16; idx++) {
 				winpal[idx].rgbBlue = pal[idx][2];
@@ -423,7 +446,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 		}
 		// the rest as normal
 
-		for (col = 0; col < 256; col+=8) {
+        for (col = 0; col < 256; col+=8) {
 			// address of byte in the RGB image (3 bytes per pixel)
 			BYTE *pInLine = pRGB + (row*256*3) + (col*3);
 			// address of byte in the 8-bit image (1 byte per pixel)

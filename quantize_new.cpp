@@ -61,7 +61,7 @@ float_precision yuvdist(float_precision r1, float_precision g1, float_precision 
 	makeYUV(r2, g2, b2, y2, cr2, cb2);
 
 	// gets diffs
-	t1=y1-y2;
+	t1=(y1-y2)*g_LumaEmphasis;
 	t2=cr1-cr2;
 	t3=cb1-cb2;
 	

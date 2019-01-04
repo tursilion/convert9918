@@ -28,6 +28,9 @@
 // TODO: we got that reliable start. But can we change colors every 4 pixels?? I don't think so, and it
 // looks like crap at 16 pixels.
 // TODO: need to retest real chip... didn't I find I could only change once every 8 pixels or so?
+// Frankly.. scanline pallette has improved a lot since I did this, and it looks pretty comparable, so
+// probably there's no need to pursue this difficult (and unlikely) mode.. ;)
+// Retested 1/3/2019 - Scanline palette is now superior is nearly every image, no need to pursue
 //#define ALLOWHAM4
 
 #ifdef _DEBUG
@@ -820,7 +823,7 @@ void ConvertToHAM4(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal) {
 	int nFixedColors = 4;
 	if (nFixedColors > 0) {
 		// TODO: proably no point selecting the first 4 colors by the whole image,
-		// we should do it just by the first 4 pixels
+		// we should do it just by the first 4 pixels (whole image does seem to work okay though...)
 		if (g_bStaticByPopularity) {
 			debug("Preserving %d top colors (popularity)\n", nFixedColors);
 
@@ -895,6 +898,17 @@ void ConvertToHAM4(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal) {
 				idx++;
 			}
 		}
+
+        // TODO: this will try just the first four colors, since it will change a lot anyway
+        debug("Psyche! Taking the FIRST %d colors...\n", nFixedColors);
+
+        for (int idx=0; idx<nFixedColors; ++idx) {
+            BYTE *pInLine = pOrig + (idx*3);
+            pal[idx+1][0]=(MakeRoundedRGB(*pInLine)&0xf0);
+            pal[idx+1][1]=(MakeRoundedRGB(*(pInLine+1)))&0xf0;
+            pal[idx+1][2]=(MakeRoundedRGB(*(pInLine+2)))&0xf0;
+            makeYUV(pal[idx+1][0], pal[idx+1][1], pal[idx+1][2], YUVpal[idx+1][0], YUVpal[idx+1][1], YUVpal[idx+1][2]);
+        }
 	}
 
 	// now we run through each scanline, 4 pixels at a time, every four pixels we have to change a color
