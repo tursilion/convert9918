@@ -68,7 +68,7 @@ public:
 	DECLARE_MESSAGE_MAP()
 };
 
-void debug(char *s, ...);
+void debug(wchar_t *s, ...);
 
 // This macro basically reduces to 4 bits of accuracy, but rounds up and shifts back to the 8-bit RGB range (so high nibble only)
 // I think this is causing a lot of my streaking...

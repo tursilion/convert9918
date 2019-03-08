@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <process.h>
-#include "D:\WORK\imgsource\4.0\islibs40_vs05\ISource.h"
+#include "D:\WORK\imgsource\4.0\islibs40_vs17_unicode\ISource.h"
 #include "D:\WORK\imgsource\2.1\src\ISLib\isarray.h"
 #include <windows.h>
 #include <list>

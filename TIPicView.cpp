@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <process.h>
-#include "D:\WORK\imgsource\4.0\islibs40_vs05\ISource.h"
+#include "D:\WORK\imgsource\4.0\islibs40_vs17_unicode\ISource.h"
 #include "D:\WORK\imgsource\2.1\src\ISLib\isarray.h"
 #include <windows.h>
 #include <list>
@@ -63,10 +63,10 @@ int cols[4096];				// work space
 Point points[256];
 
 // hacky command line interface
-char cmdLineCopy[1024];
-char *cmdFileOut, *cmdFileIn;
+wchar_t cmdLineCopy[1024];
+wchar_t *cmdFileOut, *cmdFileIn;
 #define MAX_OPTIONS 128
-char *cmdOptions[MAX_OPTIONS];
+wchar_t *cmdOptions[MAX_OPTIONS];
 int numOptions;
 
 int nCurrentByte;
@@ -121,7 +121,7 @@ UINT WINAPI GetDpiForWindow(_In_ HWND hWnd) {
 
 	if (!didSearch) {
 		didSearch = true;
-		HMODULE hMod = LoadLibrary("user32.dll");
+		HMODULE hMod = LoadLibrary(_T("user32.dll"));
 		if (NULL == hMod) {
 			printf("Failed to load user32.dll (what? really??)\n");
 		} else {
@@ -163,62 +163,62 @@ CTIPicViewApp::CTIPicViewApp()
 	// Place all significant initialization in InitInstance
 }
 
-#define INIFILE "convert9918.ini"
-char INIFILEPATH[1024];
+#define INIFILE _T("convert9918.ini")
+wchar_t INIFILEPATH[1024];
 
 // helpers
-void writeint(int n, char *name) {
-	char buf[32];
-	sprintf(buf, "%d", n);
-	WritePrivateProfileString("Convert9918", name, buf, INIFILEPATH);
+void writeint(int n, wchar_t *name) {
+	wchar_t buf[32];
+	_swprintf(buf, _T("%d"), n);
+	WritePrivateProfileString(_T("Convert9918"), name, buf, INIFILEPATH);
 }
 
-void writefloat(float_precision n, char *name) {
-	char buf[64];
+void writefloat(float_precision n, wchar_t *name) {
+	wchar_t buf[64];
 	int x = (int)(n*1000);
-	sprintf(buf, "%d", x);
-	WritePrivateProfileString("Convert9918", name, buf, INIFILEPATH);
+	_swprintf(buf, _T("%d"), x);
+	WritePrivateProfileString(_T("Convert9918"), name, buf, INIFILEPATH);
 }
 
-void writebool(bool n, char *name) {
+void writebool(bool n, wchar_t *name) {
 	if (n) {
-		WritePrivateProfileString("Convert9918", name, "1", INIFILEPATH);
+		WritePrivateProfileString(_T("Convert9918"), name, _T("1"), INIFILEPATH);
 	} else {
-		WritePrivateProfileString("Convert9918", name, "0", INIFILEPATH);
+		WritePrivateProfileString(_T("Convert9918"), name, _T("0"), INIFILEPATH);
 	}
 }
 
-void writequad(MYRGBQUAD n, char *name, char *key) {
-	char buf[64];
-	sprintf(buf, "%d,%d,%d,%d", n.rgbRed, n.rgbGreen, n.rgbBlue, n.rgbReserved);
+void writequad(MYRGBQUAD n, wchar_t *name, wchar_t *key) {
+	wchar_t buf[64];
+	_swprintf(buf, _T("%d,%d,%d,%d"), n.rgbRed, n.rgbGreen, n.rgbBlue, n.rgbReserved);
 	WritePrivateProfileString(key, name, buf, INIFILEPATH);
 }
 
-void profileString(char *group, char *key, char *defval, char *outbuf, int outsize, char *path) {
+void profileString(wchar_t *group, wchar_t *key, wchar_t *defval, wchar_t *outbuf, int outsize, wchar_t *path) {
 	// wraps GetPrivateProfileString and also checks the command line for easy override
 	// note that the command line ignores group, so no duplicate key names are allowed
 	// in the INI, groups there are really just for human readability.
 	// note that regardless of command line or not, debug is only emitted in this function
 	// when fVerbose is set.
 
-	char workbuf[128];
+	wchar_t workbuf[128];
 	bool bFound = false;
 
 	// apply default value
-	strncpy(outbuf, defval, outsize);
+	wcsncpy(outbuf, defval, outsize);
 	outbuf[outsize-1]='\0';
 
 	// check command line for key
-	_snprintf(workbuf, 128, "/%s=", key);
-	workbuf[127]='\0';
+	_snwprintf(workbuf, 128, _T("/%s="), key);
+	workbuf[127]=_T('\0');
 
 	for (int idx=0; idx<numOptions; idx++) {
-		if (0 == strncmp(cmdOptions[idx], workbuf, strlen(workbuf))) {
+		if (0 == wcsncmp(cmdOptions[idx], workbuf, wcslen(workbuf))) {
 			// copy out just the data part - we know where the equals sign is!
-			strncpy(outbuf, &cmdOptions[idx][strlen(workbuf)], outsize);
-			outbuf[outsize-1]='\0';
+			wcsncpy(outbuf, &cmdOptions[idx][wcslen(workbuf)], outsize);
+			outbuf[outsize-1]=_T('\0');
 			if (fVerbose) {
-				debug("%s/%s = %s (cmdline)\n", group, key, outbuf);
+				debug(_T("%s/%s = %s (cmdline)\n"), group, key, outbuf);
 			}
 			bFound = true;
 			break;
@@ -229,37 +229,37 @@ void profileString(char *group, char *key, char *defval, char *outbuf, int outsi
 		// usual case, read from the INI instead
 		GetPrivateProfileString(group, key, defval, outbuf, outsize, path);
 		if (fVerbose) {
-			debug("%s/%s = %s\n", group, key, outbuf);
+			debug(_T("%s/%s = %s\n"), group, key, outbuf);
 		}
 	}
 }
 
-int profileInt(char *group, char *key, int defval, char *path) {
+int profileInt(wchar_t *group, wchar_t *key, int defval, wchar_t *path) {
 	// return value as int
-	char buf[64], bufout[64];
-	sprintf(buf, "%d", defval);
+	wchar_t buf[64], bufout[64];
+	swprintf(buf, 64, _T("%d"), defval);
 
 	profileString(group, key, buf, bufout, 64, path);
-	return atoi(bufout);
+	return _wtoi(bufout);
 }
 
-void readint(int &n, char *key) {
+void readint(int &n, wchar_t *key) {
 	int x;
-	x = profileInt("Convert9918", key, -9941, INIFILEPATH);
+	x = profileInt(_T("Convert9918"), key, -9941, INIFILEPATH);
 	if (x != -9941) n=x;
 }
 
-void readfloat(float_precision &n, char *key) {
+void readfloat(float_precision &n, wchar_t *key) {
 	int x;
-	x = profileInt("Convert9918", key, -9941, INIFILEPATH);
+	x = profileInt(_T("Convert9918"), key, -9941, INIFILEPATH);
 	if (x != -9941) {
 		n = (float_precision)x / 1000.0;
 	}
 }
 
-void readbool(bool &n, char *key) {
+void readbool(bool &n, wchar_t *key) {
 	int x;
-	x = profileInt("Convert9918", key, -9941, INIFILEPATH);
+	x = profileInt(_T("Convert9918"), key, -9941, INIFILEPATH);
 	if (x != -9941) {
 		if (x) {
 			n = true;
@@ -269,13 +269,13 @@ void readbool(bool &n, char *key) {
 	}
 }
 
-void readquad(MYRGBQUAD &n, char *key, char *group) {
-	char buf[64];
+void readquad(MYRGBQUAD &n, wchar_t *key, wchar_t *group) {
+	wchar_t buf[64];
 	int r,g,b,a;
 
-	profileString(group, key, "", buf, 64, INIFILEPATH);
+	profileString(group, key, _T(""), buf, 64, INIFILEPATH);
 	if (buf[0] == '\0') return;
-	if (4 != sscanf(buf, "%d,%d,%d,%d", &r, &g, &b, &a)) return;
+	if (4 != swscanf(buf, _T("%d,%d,%d,%d"), &r, &g, &b, &a)) return;
 	n.rgbRed=r&0xff;
 	n.rgbGreen=g&0xff;
 	n.rgbBlue=b&0xff;
@@ -290,112 +290,112 @@ CTIPicViewApp theApp;
 // settings - just load/save off the globals
 void CTIPicViewApp::loadSettings() {
 	if (0 == GetCurrentDirectory(sizeof(INIFILEPATH), INIFILEPATH)) {
-		strcpy(INIFILEPATH, ".\\" INIFILE);
+		wcscpy(INIFILEPATH, _T(".\\") INIFILE);
 	} else {
-		strcat(INIFILEPATH, "\\");
-		strcat(INIFILEPATH, INIFILE);
+		wcscat(INIFILEPATH, _T("\\"));
+		wcscat(INIFILEPATH, INIFILE);
 	}
 
-	readint(PIXA, "PIXA");
-	readint(PIXB, "PIXB");
-	readint(PIXC, "PIXC");
-	readint(PIXD, "PIXD");
-	readint(PIXE, "PIXE");
-	readint(PIXF, "PIXF");
-	readint(g_orderSlide, "OrderSlide");
-	readint(g_nFilter, "Filter");
-	readint(g_nPortraitMode, "PortraitMode");
-	readint(g_Perceptual, "Perceptual");
-	readint(g_AccumulateErrors, "AccumulateErrors");
-	readint(g_MaxMultiDiff, "MaxMultiDiff");
-	readint(g_MaxColDiff, "MaxColDiff");
-	readint(g_OrderedDither, "OrderedDither");
-	readint(g_MapSize, "MapSize");
+	readint(PIXA,               _T("PIXA"));
+	readint(PIXB,               _T("PIXB"));
+	readint(PIXC,               _T("PIXC"));
+	readint(PIXD,               _T("PIXD"));
+	readint(PIXE,               _T("PIXE"));
+	readint(PIXF,               _T("PIXF"));
+	readint(g_orderSlide,       _T("OrderSlide"));
+	readint(g_nFilter,          _T("Filter"));
+	readint(g_nPortraitMode,    _T("PortraitMode"));
+	readint(g_Perceptual,       _T("Perceptual"));
+	readint(g_AccumulateErrors, _T("AccumulateErrors"));
+	readint(g_MaxMultiDiff,     _T("MaxMultiDiff"));
+	readint(g_MaxColDiff,       _T("MaxColDiff"));
+	readint(g_OrderedDither,    _T("OrderedDither"));
+	readint(g_MapSize,          _T("MapSize"));
 	if ((g_MapSize!=2)&&(g_MapSize!=4)) g_MapSize=2;
-	readfloat(g_PercepR, "PerceptR");
-	readfloat(g_PercepG, "PerceptG");
-	readfloat(g_PercepB, "PerceptB");
-	readfloat(g_LumaEmphasis, "LumaEmphasis");
-	readfloat(g_Gamma, "Gamma");
-	readbool(StretchHist, "StretchHistogram");
-	readint(pixeloffset, "PixelOffset");
-	readint(heightoffset, "HeightOffset");
-	readint(ScaleMode, "ScaleMode");
-	readquad(palinit16[0], "white", "palette");
-	readquad(palinit16[1], "black", "palette");
-	readquad(palinit16[2], "grey", "palette");
-	readquad(palinit16[3], "medGreen", "palette");
-	readquad(palinit16[4], "ltGreen", "palette");
-	readquad(palinit16[5], "dkBlue", "palette");
-	readquad(palinit16[6], "ltBlue", "palette");
-	readquad(palinit16[7], "dkRed", "palette");
-	readquad(palinit16[8], "cyan", "palette");
-	readquad(palinit16[9], "medRed", "palette");
-	readquad(palinit16[10], "ltRed", "palette");
-	readquad(palinit16[11], "dkYellow", "palette");
-	readquad(palinit16[12], "ltYellow", "palette");
-	readquad(palinit16[13], "dkGreen", "palette");
-	readquad(palinit16[14], "magenta", "palette");
+	readfloat(g_PercepR,        _T("PerceptR"));
+	readfloat(g_PercepG,        _T("PerceptG"));
+	readfloat(g_PercepB,        _T("PerceptB"));
+	readfloat(g_LumaEmphasis,   _T("LumaEmphasis"));
+	readfloat(g_Gamma,          _T("Gamma"));
+	readbool(StretchHist,       _T("StretchHistogram"));
+	readint(pixeloffset,        _T("PixelOffset"));
+	readint(heightoffset,       _T("HeightOffset"));
+	readint(ScaleMode,          _T("ScaleMode"));
+	readquad(palinit16[0],      _T("white"),    _T("palette"));
+	readquad(palinit16[1],      _T("black"),    _T("palette"));
+	readquad(palinit16[2],      _T("grey"),     _T("palette"));
+	readquad(palinit16[3],      _T("medGreen"), _T("palette"));
+	readquad(palinit16[4],      _T("ltGreen"),  _T("palette"));
+	readquad(palinit16[5],      _T("dkBlue"),   _T("palette"));
+	readquad(palinit16[6],      _T("ltBlue"),   _T("palette"));
+	readquad(palinit16[7],      _T("dkRed"),    _T("palette"));
+	readquad(palinit16[8],      _T("cyan"),     _T("palette"));
+	readquad(palinit16[9],      _T("medRed"),   _T("palette"));
+	readquad(palinit16[10],     _T("ltRed"),    _T("palette"));
+	readquad(palinit16[11],     _T("dkYellow"), _T("palette"));
+	readquad(palinit16[12],     _T("ltYellow"), _T("palette"));
+	readquad(palinit16[13],     _T("dkGreen"),  _T("palette"));
+	readquad(palinit16[14],     _T("magenta"),  _T("palette"));
 }
 
 void CTIPicViewApp::saveSettings() {
 	SetCurrentDirectory(INIFILEPATH);
 
-	writeint(PIXA, "PIXA");
-	writeint(PIXB, "PIXB");
-	writeint(PIXC, "PIXC");
-	writeint(PIXD, "PIXD");
-	writeint(PIXE, "PIXE");
-	writeint(PIXF, "PIXF");
-	writeint(g_orderSlide, "OrderSlide");
-	writeint(g_nFilter, "Filter");
-	writeint(g_nPortraitMode, "PortraitMode");
-	writeint(g_Perceptual, "Perceptual");
-	writeint(g_AccumulateErrors, "AccumulateErrors");
-	writeint(g_MaxMultiDiff, "MaxMultiDiff");
-	writeint(g_MaxColDiff, "MaxColDiff");
-	writeint(g_OrderedDither, "OrderedDither");
-	writeint(g_MapSize, "MapSize");
-	writefloat(g_PercepR, "PerceptR");
-	writefloat(g_PercepG, "PerceptG");
-	writefloat(g_PercepB, "PerceptB");
-	writefloat(g_LumaEmphasis, "LumaEmphasis");
-	writefloat(g_Gamma, "Gamma");
-	writebool(StretchHist, "StretchHistogram");
-	writeint(pixeloffset, "PixelOffset");
-	writeint(heightoffset, "HeightOffset");
-	writeint(ScaleMode, "ScaleMode");
-	writequad(palinit16[0], "white", "palette");
-	writequad(palinit16[1], "black", "palette");
-	writequad(palinit16[2], "grey", "palette");
-	writequad(palinit16[3], "medGreen", "palette");
-	writequad(palinit16[4], "ltGreen", "palette");
-	writequad(palinit16[5], "dkBlue", "palette");
-	writequad(palinit16[6], "ltBlue", "palette");
-	writequad(palinit16[7], "dkRed", "palette");
-	writequad(palinit16[8], "cyan", "palette");
-	writequad(palinit16[9], "medRed", "palette");
-	writequad(palinit16[10], "ltRed", "palette");
-	writequad(palinit16[11], "dkYellow", "palette");
-	writequad(palinit16[12], "ltYellow", "palette");
-	writequad(palinit16[13], "dkGreen", "palette");
-	writequad(palinit16[14], "magenta", "palette");
+	writeint(PIXA,                  _T("PIXA"));
+	writeint(PIXB,                  _T("PIXB"));
+	writeint(PIXC,                  _T("PIXC"));
+	writeint(PIXD,                  _T("PIXD"));
+	writeint(PIXE,                  _T("PIXE"));
+	writeint(PIXF,                  _T("PIXF"));
+	writeint(g_orderSlide,          _T("OrderSlide"));
+	writeint(g_nFilter,             _T("Filter"));
+	writeint(g_nPortraitMode,       _T("PortraitMode"));
+	writeint(g_Perceptual,          _T("Perceptual"));
+	writeint(g_AccumulateErrors,    _T("AccumulateErrors"));
+	writeint(g_MaxMultiDiff,        _T("MaxMultiDiff"));
+	writeint(g_MaxColDiff,          _T("MaxColDiff"));
+	writeint(g_OrderedDither,       _T("OrderedDither"));
+	writeint(g_MapSize,             _T("MapSize"));
+	writefloat(g_PercepR,           _T("PerceptR"));
+	writefloat(g_PercepG,           _T("PerceptG"));
+	writefloat(g_PercepB,           _T("PerceptB"));
+	writefloat(g_LumaEmphasis,      _T("LumaEmphasis"));
+	writefloat(g_Gamma,             _T("Gamma"));
+	writebool(StretchHist,          _T("StretchHistogram"));
+	writeint(pixeloffset,           _T("PixelOffset"));
+	writeint(heightoffset,          _T("HeightOffset"));
+	writeint(ScaleMode,             _T("ScaleMode"));
+	writequad(palinit16[0],         _T("white"),        _T("palette"));
+    writequad(palinit16[1],         _T("black"),        _T("palette"));
+	writequad(palinit16[2],         _T("grey"),         _T("palette"));
+	writequad(palinit16[3],         _T("medGreen"),     _T("palette"));
+	writequad(palinit16[4],         _T("ltGreen"),      _T("palette"));
+	writequad(palinit16[5],         _T("dkBlue"),       _T("palette"));
+	writequad(palinit16[6],         _T("ltBlue"),       _T("palette"));
+	writequad(palinit16[7],         _T("dkRed"),        _T("palette"));
+	writequad(palinit16[8],         _T("cyan"),         _T("palette"));
+	writequad(palinit16[9],         _T("medRed"),       _T("palette"));
+	writequad(palinit16[10],        _T("ltRed"),        _T("palette"));
+	writequad(palinit16[11],        _T("dkYellow"),     _T("palette"));
+	writequad(palinit16[12],        _T("ltYellow"),     _T("palette"));
+	writequad(palinit16[13],        _T("dkGreen"),      _T("palette"));
+	writequad(palinit16[14],        _T("magenta"),      _T("palette"));
 	// no duplicate key names are allowed in this app due to command line overrides
-	writequad(defaultpalinit16[0],  "def_white", "default_palette");
-	writequad(defaultpalinit16[1],  "def_black", "default_palette");
-	writequad(defaultpalinit16[2],  "def_grey", "default_palette");
-	writequad(defaultpalinit16[3],  "def_medGreen", "default_palette");
-	writequad(defaultpalinit16[4],  "def_ltGreen", "default_palette");
-	writequad(defaultpalinit16[5],  "def_dkBlue", "default_palette");
-	writequad(defaultpalinit16[6],  "def_ltBlue", "default_palette");
-	writequad(defaultpalinit16[7],  "def_dkRed", "default_palette");
-	writequad(defaultpalinit16[8],  "def_cyan", "default_palette");
-	writequad(defaultpalinit16[9],  "def_medRed", "default_palette");
-	writequad(defaultpalinit16[10], "def_ltRed", "default_palette");
-	writequad(defaultpalinit16[11], "def_dkYellow", "default_palette");
-	writequad(defaultpalinit16[12], "def_ltYellow", "default_palette");
-	writequad(defaultpalinit16[13], "def_dkGreen", "default_palette");
-	writequad(defaultpalinit16[14], "def_magenta", "default_palette");
+	writequad(defaultpalinit16[0],  _T("def_white"),    _T("default_palette"));
+	writequad(defaultpalinit16[1],  _T("def_black"),    _T("default_palette"));
+	writequad(defaultpalinit16[2],  _T("def_grey"),     _T("default_palette"));
+	writequad(defaultpalinit16[3],  _T("def_medGreen"), _T("default_palette"));
+	writequad(defaultpalinit16[4],  _T("def_ltGreen"),  _T("default_palette"));
+	writequad(defaultpalinit16[5],  _T("def_dkBlue"),   _T("default_palette"));
+	writequad(defaultpalinit16[6],  _T("def_ltBlue"),   _T("default_palette"));
+	writequad(defaultpalinit16[7],  _T("def_dkRed"),    _T("default_palette"));
+	writequad(defaultpalinit16[8],  _T("def_cyan"),     _T("default_palette"));
+	writequad(defaultpalinit16[9],  _T("def_medRed"),   _T("default_palette"));
+	writequad(defaultpalinit16[10], _T("def_ltRed"),    _T("default_palette"));
+	writequad(defaultpalinit16[11], _T("def_dkYellow"), _T("default_palette"));
+	writequad(defaultpalinit16[12], _T("def_ltYellow"), _T("default_palette"));
+	writequad(defaultpalinit16[13], _T("def_dkGreen"),  _T("default_palette"));
+	writequad(defaultpalinit16[14], _T("def_magenta"),  _T("default_palette"));
 
 }
 
@@ -441,36 +441,36 @@ BOOL CTIPicViewApp::InitInstance()
 	int idx=0;
 	bool quote=false;
 	if (m_lpCmdLine[0] != '\0') {
-		strncpy(cmdLineCopy, m_lpCmdLine, sizeof(cmdLineCopy));
-		cmdLineCopy[sizeof(cmdLineCopy)-1] = '\0';
-		if (strlen(cmdLineCopy) < sizeof(cmdLineCopy)-2) {
+		wcsncpy(cmdLineCopy, m_lpCmdLine, sizeof(cmdLineCopy));
+		cmdLineCopy[sizeof(cmdLineCopy)-1] = _T('\0');
+		if (wcslen(cmdLineCopy) < sizeof(cmdLineCopy)-2) {
 			// pad with a space so we parse the last option
-			strcat(cmdLineCopy, " ");
+			wcscat(cmdLineCopy, _T(" "));
 		}
 
-		while (cmdLineCopy[idx] != '\0') {
+		while (cmdLineCopy[idx] != _T('\0')) {
 			// handle escaped characters and quoted strings
-			if (cmdLineCopy[idx] == '\\') {
+			if (cmdLineCopy[idx] == _T('\\')) {
 				idx++;
-				if (cmdLineCopy[idx] != '\0') idx++;
+				if (cmdLineCopy[idx] != _T('\0')) idx++;
 				continue;
 			}
-			if (cmdLineCopy[idx] == '\"') {
+			if (cmdLineCopy[idx] == _T('\"')) {
 				quote=!quote;
 				++idx;
 				continue;
 			}
-			if ((cmdLineCopy[idx] == ' ') && (!quote)) {
-				cmdLineCopy[idx] = '\0';
+			if ((cmdLineCopy[idx] == _T(' ')) && (!quote)) {
+				cmdLineCopy[idx] = _T('\0');
 				if (tokenStart != -1) {
 					// we had a string, what was it?
-					if (cmdLineCopy[tokenStart] == '/') {
+					if (cmdLineCopy[tokenStart] == _T('/')) {
 						// as an aside, check immediates here
-						if (0 == strcmp("/verbose", &cmdLineCopy[tokenStart])) {
+						if (0 == wcscmp(_T("/verbose"), &cmdLineCopy[tokenStart])) {
 							GetConsole();	// open the console now
 							fVerbose = true;
-							debug("Verbose mode on");
-						} else if (0 == strcmp("/?", &cmdLineCopy[tokenStart])) {
+							debug(_T("Verbose mode on"));
+						} else if (0 == wcscmp(_T("/?"), &cmdLineCopy[tokenStart])) {
 							printf(" /verbose = enable verbose output\n");
 							printf(" Any other option from the INI may be specified as \"/option=value\" - see INI.\n");
 							ExitProcess(0);
@@ -495,13 +495,13 @@ BOOL CTIPicViewApp::InitInstance()
 					tokenStart = -1;
 				}
 			}
-			if ((cmdLineCopy[idx]!='\0')&&(!isspace(cmdLineCopy[idx]))&&(tokenStart == -1)) {
+			if ((cmdLineCopy[idx]!=_T('\0'))&&(!isspace(cmdLineCopy[idx]))&&(tokenStart == -1)) {
 				tokenStart = idx;
 			}
 			++idx;
 		}
 		// printf can handle NULL, so this is okay
-		printf("File In: %s\nFileOut: %s\n", cmdFileIn, cmdFileOut);
+		printf("File In: %S\nFileOut: %S\n", cmdFileIn, cmdFileOut);
 	}
 
 	// we might already have it depending on the command line
@@ -525,7 +525,7 @@ BOOL CTIPicViewApp::InitInstance()
 		saveSettings();
 	} else {
 		if (fVerbose) {
-			debug("Skipping saving settings due to command line parameters.");
+			debug(_T("Skipping saving settings due to command line parameters."));
 		}
 	}
 
@@ -551,7 +551,7 @@ void MYRGBTo8BitDithered(BYTE *pRGB, BYTE *p8Bit, MYRGBQUAD *inpal, double darke
 #endif
 
 		// updates p8Bit, also updates the palette as needed
-		debug("Applying half-multicolor search...\n");
+		debug(_T("Applying half-multicolor search...\n"));
 		ConvertToHalfMulticolor(pRGB, p8Bit, inpal);	// this is fast enough that we don't need to break it up
 		if (g_UseMulticolorOnly) {
 			return;
@@ -825,7 +825,7 @@ void ConvertToHAM4(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal) {
 		// TODO: proably no point selecting the first 4 colors by the whole image,
 		// we should do it just by the first 4 pixels (whole image does seem to work okay though...)
 		if (g_bStaticByPopularity) {
-			debug("Preserving %d top colors (popularity)\n", nFixedColors);
+			debug(_T("Preserving %d top colors (popularity)\n"), nFixedColors);
 
 			int nColCount = 0;
 
@@ -863,7 +863,7 @@ void ConvertToHAM4(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal) {
 					}
 				}
 			}
-			debug("%d relevant colors detected (%d%%).\n", nColCount, nColCount*100/4096);
+			debug(_T("%d relevant colors detected (%d%%).\n"), nColCount, nColCount*100/4096);
 
 			// should have (up to) 15 colors sorted now, grab the top x (popularity)
 			for (int idx=0; idx<nFixedColors; idx++) {
@@ -873,7 +873,7 @@ void ConvertToHAM4(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal) {
 				makeYUV(pal[idx+1][0], pal[idx+1][1], pal[idx+1][2], YUVpal[idx+1][0], YUVpal[idx+1][1], YUVpal[idx+1][2]);
 			}
 		} else {
-			debug("Preserving %d top colors (median cut)\n", nFixedColors);
+			debug(_T("Preserving %d top colors (median cut)\n"), nFixedColors);
 			// need to make a work copy of the image
 			// this uses median cut over the entire image down to the number of static colors
 			unsigned char *pWork = (unsigned char*)malloc(256*192*3);
@@ -900,7 +900,7 @@ void ConvertToHAM4(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal) {
 		}
 
         // TODO: this will try just the first four colors, since it will change a lot anyway
-        debug("Psyche! Taking the FIRST %d colors...\n", nFixedColors);
+        debug(_T("Psyche! Taking the FIRST %d colors...\n"), nFixedColors);
 
         for (int idx=0; idx<nFixedColors; ++idx) {
             BYTE *pInLine = pOrig + (idx*3);
@@ -913,7 +913,7 @@ void ConvertToHAM4(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal) {
 
 	// now we run through each scanline, 4 pixels at a time, every four pixels we have to change a color
 	for (int y=0; y<192; y++) {
-		debug("Scanning line %d\r", y);
+		debug(_T("Scanning line %d\r"), y);
 		for (int x=0; x<256; x+=4) {
 			// copy into winpal
 			for (int idx=0; idx<4; idx++) {
@@ -1063,7 +1063,7 @@ void ConvertToHAM4(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal) {
 
 		}	// next block of 4 x
 	}	// next y
-	debug("\n");
+	debug(_T("\n"));
 }
 
 #endif // ALLOWHAM4

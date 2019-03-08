@@ -8,18 +8,18 @@
 
 unsigned char buf[8192];
 
-int main(int argc, char* argv[])
+int main(int argc, wchar_t* argv[])
 {
 	FILE *fp = NULL;
 	if (argc > 1) {
-		char *p = strrchr(argv[1], 'M');
+		wchar_t *p = wcsrchr(argv[1], _T('M'));
 		if (NULL == p) {
-			p = strrchr(argv[1], 'm');
+			p = wcsrchr(argv[1], _T('m'));
 		}
-		if ((NULL == p) || (*(p+1)!='\0')) {
+		if ((NULL == p) || (*(p+1)!=_T('\0'))) {
 			printf("\n* You MUST pass in the name of the palette (_M/TIAM) file!\n");
 		} else {
-			fp=fopen(argv[1], "rb+");
+			fp=_wfopen(argv[1], L"rb+");
 			if (NULL == fp) {
 				printf("Can't open file to edit.\n");
 			}

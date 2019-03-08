@@ -5,7 +5,7 @@
 #include <Windows.h>
 #include "TIPicView.h"
 #include "TIPicViewDlg.h"
-#include "D:\WORK\imgsource\4.0\islibs40_vs05\ISource.h"
+#include "D:\WORK\imgsource\4.0\islibs40_vs17_unicode\ISource.h"
 #include "xbtest.h"
 
 #ifdef _DEBUG
@@ -40,7 +40,7 @@ extern unsigned char scanlinepal[192][16][4];
 extern float_precision g_PercepR, g_PercepG, g_PercepB;
 extern float_precision g_LumaEmphasis;
 extern float_precision g_Gamma;
-extern char *cmdFileIn, *cmdFileOut;
+extern wchar_t *cmdFileIn, *cmdFileOut;
 extern unsigned char buf8[256*192];
 extern RGBQUAD winpal[256];
 extern bool fVerbose;
@@ -78,7 +78,7 @@ enum {
 // it won't break anything
 HANDLE hSharedMemory = NULL;
 LPVOID pSharedPointer = NULL;
-char szLastFilename[256];
+wchar_t szLastFilename[256];
 
 // Assuming TIAP files which are normally 6144 bytes each, PROGRAM image, no 6 byte header
 // nSize must be less than 64k 
@@ -320,15 +320,15 @@ BOOL CTIPicViewDlg::OnInitDialog()
 
 	// fill in the drop list (order must match the enum!)
 	m_ctrlList.ResetContent();
-	m_ctrlList.AddString("Bitmap 9918A");
-	m_ctrlList.AddString("Greyscale Bitmap 9918A");
-	m_ctrlList.AddString("B&W Bitmap 9918A");
-	m_ctrlList.AddString("Multicolor 9918");
-	m_ctrlList.AddString("Dual-Multicolor (flicker) 9918");
-	m_ctrlList.AddString("Half-Multicolor (flicker) 9918A");
-	m_ctrlList.AddString("Bitmap color only 9918A");
-	m_ctrlList.AddString("Paletted Bitmap F18A");
-	m_ctrlList.AddString("Scanline Palette Bitmap F18A");
+	m_ctrlList.AddString(_T("Bitmap 9918A"));
+	m_ctrlList.AddString(_T("Greyscale Bitmap 9918A"));
+	m_ctrlList.AddString(_T("B&W Bitmap 9918A"));
+	m_ctrlList.AddString(_T("Multicolor 9918"));
+	m_ctrlList.AddString(_T("Dual-Multicolor (flicker) 9918"));
+	m_ctrlList.AddString(_T("Half-Multicolor (flicker) 9918A"));
+	m_ctrlList.AddString(_T("Bitmap color only 9918A"));
+	m_ctrlList.AddString(_T("Paletted Bitmap F18A"));
+	m_ctrlList.AddString(_T("Scanline Palette Bitmap F18A"));
 	m_ctrlList.SetCurSel(0);
 	OnCbnSelchangeCombo1();
 
@@ -440,7 +440,7 @@ HCURSOR CTIPicViewDlg::OnQueryDragIcon()
 
 void CTIPicViewDlg::OnOK() {}
 
-void maincode(int mode, char *pFile, double dark);
+void maincode(int mode, CString pFile, double dark);
 // this is actually 'Open' now
 void CTIPicViewDlg::OnRnd() 
 {
@@ -453,7 +453,7 @@ void CTIPicViewDlg::OnRnd()
 
 	// Get Path filename
 	CFileDialog dlg(true);
-	dlg.m_ofn.lpstrTitle="Select file to open: BMP, GIF, JPG, PNG, PCX or TIFF";
+	dlg.m_ofn.lpstrTitle=_T("Select file to open: BMP, GIF, JPG, PNG, PCX or TIFF");
 	if (IDOK != dlg.DoModal()) {
 		return;
 	}
@@ -467,7 +467,7 @@ void CTIPicViewDlg::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
 	fInSlideMode=true;
 	CWnd *pCtl=GetDlgItem(IDC_RND);
-	if (pCtl) pCtl->SetWindowText("Next");
+	if (pCtl) pCtl->SetWindowText(_T("Next"));
 	SetTimer(0, 500, NULL);		// start a regular tick to watch for new files
 
 	CDialog::OnLButtonDblClk(nFlags, point);
@@ -481,7 +481,7 @@ void CTIPicViewDlg::OnDoubleclickedRnd()
 	if (csPath=="") {
 		// Get Path image
 		CFileDialog dlg(true);
-		dlg.m_ofn.lpstrTitle="Select any file in a folder for random load - filename will be ignored";
+		dlg.m_ofn.lpstrTitle=_T("Select any file in a folder for random load - filename will be ignored");
 		if (IDOK != dlg.DoModal()) {
 			return;
 		}
@@ -493,7 +493,7 @@ void CTIPicViewDlg::OnDoubleclickedRnd()
 
 	// make sure the shared memory is available
 	if (NULL == hSharedMemory) {
-		hSharedMemory = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, 4096, "Convert9918MappedData");
+		hSharedMemory = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, 4096, _T("Convert9918MappedData"));
 		if (NULL != hSharedMemory) {
 			pSharedPointer = MapViewOfFile(hSharedMemory, FILE_MAP_ALL_ACCESS, 0, 0, 4096);
 		} else {
@@ -501,7 +501,7 @@ void CTIPicViewDlg::OnDoubleclickedRnd()
 		}
 	}
 
-	LaunchMain(0,(char*)(const char*)csPath);
+	LaunchMain(0,csPath);
 	// display the picture on the dialog
 }
 
@@ -514,7 +514,7 @@ void CTIPicViewDlg::OnButton2()
 {
 	if (pixeloffset < 7) {
 		pixeloffset++;
-		LaunchMain(1,NULL);
+		LaunchMain(1,"");
 	}
 }
 
@@ -522,7 +522,7 @@ void CTIPicViewDlg::OnButton1()
 {
 	if (pixeloffset > -7) {
 		pixeloffset--;
-		LaunchMain(1,NULL);
+		LaunchMain(1,"");
 	}
 }
 
@@ -586,7 +586,7 @@ unsigned char *CTIPicViewDlg::RLEEncode(unsigned char *pbuf, int *nSize, int InS
 		}
 	}
 	*nSize = nOutputSize;
-	debug("RLE compress table from %d to %d bytes\n", InSize, nOutputSize);
+	debug(_T("RLE compress table from %d to %d bytes\n"), InSize, nOutputSize);
 	return pRet;
 }
 
@@ -605,17 +605,17 @@ void CTIPicViewDlg::OnButton4()
 
 	if (!fFirstLoad) {
 		if (fVerbose) {
-			debug("No file loaded to save.\n");
+			debug(_T("No file loaded to save.\n"));
 		}
 		return;
 	}
 
 	// Type:		 1							2						3			4				5				6						7			8                       9                                    10
-	CString csFmt = "TIFILES Format Header|*.*|V9T9 Format Header|*.*|Raw Files|*.*|RLE Files|*.*|TI XB Program|*.*|TI XB RLE Program|*.*|MSX SC2|*.SC2|ColecoVision Cart|*.ROM|ColecoVision RLE Cart (Broken)|*.ROM|PNG file (PC)|*.PNG||";
+	CString csFmt = _T("TIFILES Format Header|*.*|V9T9 Format Header|*.*|Raw Files|*.*|RLE Files|*.*|TI XB Program|*.*|TI XB RLE Program|*.*|MSX SC2|*.SC2|ColecoVision Cart|*.ROM|ColecoVision RLE Cart (Broken)|*.ROM|PNG file (PC)|*.PNG||");
 	CFileDialog dlg(false, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, csFmt);
 
 	// Save image
-	dlg.m_ofn.lpstrTitle="Enter base name - do not include extensions.";
+	dlg.m_ofn.lpstrTitle=_T("Enter base name - do not include extensions.");
 
 	if (!ResetToValidConversion()) {
 		return;
@@ -653,7 +653,7 @@ void CTIPicViewDlg::OnButton4()
 			if (INVALID_HANDLE_VALUE != hFile) {
 				CloseHandle(hFile);
 				if (cmdFileIn == NULL) {
-					if (IDYES != AfxMessageBox("File(s) exist. Overwrite?", MB_YESNO)) {
+					if (IDYES != AfxMessageBox(_T("File(s) exist. Overwrite?"), MB_YESNO)) {
 						return;
 					}
 				}
@@ -668,7 +668,7 @@ void CTIPicViewDlg::OnButton4()
 					CloseHandle(hFile);
 					if (!bOverwrite) {
 						if (cmdFileIn == NULL) {
-							if (IDYES != AfxMessageBox("File(s) exist. Overwrite?", MB_YESNO)) {
+							if (IDYES != AfxMessageBox(_T("File(s) exist. Overwrite?"), MB_YESNO)) {
 								return;
 							}
 						}
@@ -685,7 +685,7 @@ void CTIPicViewDlg::OnButton4()
 					CloseHandle(hFile);
 					if (!bOverwrite) {
 						if (cmdFileIn == NULL) {
-							if (IDYES != AfxMessageBox("File(s) exist. Overwrite?", MB_YESNO)) {
+							if (IDYES != AfxMessageBox(_T("File(s) exist. Overwrite?"), MB_YESNO)) {
 								return;
 							}
 						}
@@ -700,128 +700,128 @@ void CTIPicViewDlg::OnButton4()
 			default:
 			case 1:	// TIFILES
 				dlg.m_pOFN->nFilterIndex=1; // just to be sure (because of the default case)
-				debug("Writing TIFILES headers.\n");
+				debug(_T("Writing TIFILES headers.\n"));
 				break;
 
 			case 2:	// V9T9
-				debug("Writing V9T9 headers.\n");
+				debug(_T("Writing V9T9 headers.\n"));
 				break;
 
 			case 3:	// No header
-				debug("No headers will be written.\n");
+				debug(_T("No headers will be written.\n"));
 				break;
 
 			case 4: // RLE
-				debug("RLE files with no header will be written\n");
+				debug(_T("RLE files with no header will be written\n"));
 				break;
 
 			case 5: // XB Program
 				if (g_UseHalfMulticolor) {
-					AfxMessageBox("Half-multicolor not supported with Extended BASIC.");
+					AfxMessageBox(_T("Half-multicolor not supported with Extended BASIC."));
 					return ;
 				}
 				if (g_UseMulticolorOnly) {
-					AfxMessageBox("Multicolor not supported with Extended BASIC.");
+					AfxMessageBox(_T("Multicolor not supported with Extended BASIC."));
 					return ;
 				}
 				if (g_UsePerLinePalette) {
-					AfxMessageBox("Per-Line paletted images not supported with Extended BASIC.");
+					AfxMessageBox(_T("Per-Line paletted images not supported with Extended BASIC."));
 					return ;
 				}
 				if (g_UsePalette) {
-					AfxMessageBox("Paletted images not supported with Extended BASIC.");
+					AfxMessageBox(_T("Paletted images not supported with Extended BASIC."));
 					return ;
 				}
-				debug("XB Program image with TIFILES header will be written\n");
+				debug(_T("XB Program image with TIFILES header will be written\n"));
 				break;
 
 			case 6: // XB RLE Program
 				if (g_UseHalfMulticolor) {
-					AfxMessageBox("Half-multicolor not supported with Extended BASIC.");
+					AfxMessageBox(_T("Half-multicolor not supported with Extended BASIC."));
 					return ;
 				}
 				if (g_UseMulticolorOnly) {
-					AfxMessageBox("Multicolor not supported with Extended BASIC.");
+					AfxMessageBox(_T("Multicolor not supported with Extended BASIC."));
 					return ;
 				}
 				if (g_UsePerLinePalette) {
-					AfxMessageBox("Per-Line paletted images not supported with Extended BASIC.");
+					AfxMessageBox(_T("Per-Line paletted images not supported with Extended BASIC."));
 					return ;
 				}
 				if (g_UsePalette) {
-					AfxMessageBox("Paletted images not supported with Extended BASIC.");
+					AfxMessageBox(_T("Paletted images not supported with Extended BASIC."));
 					return ;
 				}
-				debug("XB RLE Program image with TIFILES header will be written\n");
+				debug(_T("XB RLE Program image with TIFILES header will be written\n"));
 				break;
 
 			case 7: // MSX SC2
 				if (g_UseHalfMulticolor) {
-					AfxMessageBox("Half-multicolor not supported with MSX dump.");
+					AfxMessageBox(_T("Half-multicolor not supported with MSX dump."));
 					return ;
 				}
 				if (g_UseMulticolorOnly) {
-					AfxMessageBox("Multicolor not supported with MSX dump.");
+					AfxMessageBox(_T("Multicolor not supported with MSX dump."));
 					return ;
 				}
 				if (g_UsePerLinePalette) {
-					AfxMessageBox("Per-Line paletted images not supported with MSX dump.");
+					AfxMessageBox(_T("Per-Line paletted images not supported with MSX dump."));
 					return ;
 				}
 				if (g_UsePalette) {
-					AfxMessageBox("Paletted images not supported with MSX dump.");
+					AfxMessageBox(_T("Paletted images not supported with MSX dump."));
 					return ;
 				}
-				debug("MSX *.SC2 type image will be written\n");
+				debug(_T("MSX *.SC2 type image will be written\n"));
 				break;
 
 			case 8:	// ColecoVision cartridge
 				if (g_UseHalfMulticolor) {
-					AfxMessageBox("Half-multicolor not supported with ColecoVision ROM.");
+					AfxMessageBox(_T("Half-multicolor not supported with ColecoVision ROM."));
 					return ;
 				}
 				if (g_UseMulticolorOnly) {
-					AfxMessageBox("Multicolor not supported with ColecoVision ROM.");
+					AfxMessageBox(_T("Multicolor not supported with ColecoVision ROM."));
 					return ;
 				}
 				if (g_UsePerLinePalette) {
-					AfxMessageBox("Per-Line paletted images not supported with ColecoVision ROM.");
+					AfxMessageBox(_T("Per-Line paletted images not supported with ColecoVision ROM."));
 					return ;
 				}
 				if (g_UsePalette) {
-					AfxMessageBox("Paletted images not supported with ColecoVision ROM.");
+					AfxMessageBox(_T("Paletted images not supported with ColecoVision ROM."));
 					return ;
 				}
-				debug("ColecoVision cartridge will be written\n");
+				debug(_T("ColecoVision cartridge will be written\n"));
 				break;
 
 			case 9:	// ColecoVision RLE cartridge
 				if (g_UseHalfMulticolor) {
-					AfxMessageBox("Half-multicolor not supported with ColecoVision ROM.");
+					AfxMessageBox(_T("Half-multicolor not supported with ColecoVision ROM."));
 					return ;
 				}
 				if (g_UseMulticolorOnly) {
-					AfxMessageBox("Multicolor not supported with ColecoVision ROM.");
+					AfxMessageBox(_T("Multicolor not supported with ColecoVision ROM."));
 					return ;
 				}
 				if (g_UsePerLinePalette) {
-					AfxMessageBox("Per-Line paletted images not supported with ColecoVision ROM.");
+					AfxMessageBox(_T("Per-Line paletted images not supported with ColecoVision ROM."));
 					return ;
 				}
 				if (g_UsePalette) {
-					AfxMessageBox("Paletted images not supported with ColecoVision ROM.");
+					AfxMessageBox(_T("Paletted images not supported with ColecoVision ROM."));
 					return ;
 				}
-				debug("ColecoVision RLE cartridge will be written\n");
+				debug(_T("ColecoVision RLE cartridge will be written\n"));
 				break;
 
 			case 10:	// PNG file for PC
 				// this might work, right now I don't want to figure out how ;)
 				if (g_UsePerLinePalette) {
-					AfxMessageBox("Per-Line paletted images not currently supported with PNG export.");
+					AfxMessageBox(_T("Per-Line paletted images not currently supported with PNG export."));
 					return ;
 				}
-				debug("PC PNG file will be written\n");
+				debug(_T("PC PNG file will be written\n"));
 				break;
 		}
 
@@ -830,12 +830,12 @@ void CTIPicViewDlg::OnButton4()
 			cs+="_P";
 			cs.MakeUpper();
 			CString csRealName = cs;
-			if (csRealName.Right(2).MakeUpper() == "_P") {
-				csRealName = csRealName.Left(csRealName.GetLength()-2) + ".TIAP";
+			if (csRealName.Right(2).MakeUpper() == _T("_P")) {
+				csRealName = csRealName.Left(csRealName.GetLength()-2) + _T(".TIAP");
 			}
-			fopen_s(&fP, csRealName, "wb");
+			_wfopen_s(&fP, csRealName, _T("wb"));
 			if (NULL == fP) {
-				AfxMessageBox("Failed to open _P file");
+				AfxMessageBox(_T("Failed to open _P file"));
 				return;
 			}
 		} else {
@@ -843,16 +843,16 @@ void CTIPicViewDlg::OnButton4()
 			case 8:
 			case 9:
 				// colecovision
-				cs+=".rom";
+				cs+=_T(".rom");
 				break;
 
 			case 10:
 				// PC PNG
-				cs+=".png";
+				cs+=_T(".png");
 			}
-			fopen_s(&fP, cs, "wb");
+			_wfopen_s(&fP, cs, _T("wb"));
 			if (NULL == fP) {
-				AfxMessageBox("Failed to open output file");
+				AfxMessageBox(_T("Failed to open output file"));
 				return;
 			}
 		}
@@ -865,7 +865,7 @@ void CTIPicViewDlg::OnButton4()
 				break;
 
 			case 2:	// V9T9
-				DoV9T9(fP,rawfile+"_P", nOutputPSize);
+				DoV9T9(fP,rawfile+_T("_P"), nOutputPSize);
 				break;
 
 			case 5:	// XB
@@ -894,11 +894,11 @@ void CTIPicViewDlg::OnButton4()
 				HISDEST dst = IS40_OpenFileDest(cs, FALSE);
 				if (NULL != dst) {
 					if (0 == IS40_WritePNG(dst, buf8, 256, 192, 256, 8, 256, winpal, 3, 0.0, NULL, 0)) {
-						AfxMessageBox("Error while writing file!");
+						AfxMessageBox(_T("Error while writing file!"));
 					}
 					IS40_CloseDest(dst);
 				} else {
-					AfxMessageBox("Failed to save file!");
+					AfxMessageBox(_T("Failed to save file!"));
 				}
 				return;
 		}
@@ -913,10 +913,10 @@ void CTIPicViewDlg::OnButton4()
 				if (csRealName.Right(2).MakeUpper() == "_C") {
 					csRealName = csRealName.Left(csRealName.GetLength()-2) + ".TIAC";
 				}
-				fopen_s(&fC, csRealName, "wb");
+				_wfopen_s(&fC, csRealName, _T("wb"));
 				if (NULL == fC) {
 					fclose(fP);
-					AfxMessageBox("Failed to open _C file");
+					AfxMessageBox(_T("Failed to open _C file"));
 					return;
 				}
 
@@ -939,11 +939,11 @@ void CTIPicViewDlg::OnButton4()
 						if (csRealName.Right(2).MakeUpper() == "_M") {
 							csRealName = csRealName.Left(csRealName.GetLength()-2) + ".TIAM";
 						}
-						fopen_s(&fM, csRealName, "wb");
+						_wfopen_s(&fM, csRealName, _T("wb"));
 						if (NULL == fM) {
 							fclose(fP);
 							fclose(fC);
-							AfxMessageBox("Failed to open _M file");
+							AfxMessageBox(_T("Failed to open _M file"));
 							return;
 						}
 
@@ -1217,14 +1217,14 @@ void CTIPicViewDlg::OnButton4()
 					if ((fM)&&(!g_UsePalette)) {
 						pRLEM = RLEEncode(mbuf, &sizeM, nOutputMSize);
 						if (sizeP+sizeC+sizeM > nOutputPSize+nOutputCSize+nOutputMSize) {
-							AfxMessageBox("Warning: RLE file size greater than uncompressed would be. Will save anyway.");
+							AfxMessageBox(_T("Warning: RLE file size greater than uncompressed would be. Will save anyway."));
 						}
 						// write the multicolor file here.
 						fwrite(pRLEM, 1, sizeM, fM);
 						free(pRLEM);
 					} else {
 						if (sizeP+sizeC > nOutputPSize+nOutputCSize) {
-							AfxMessageBox("Warning: RLE file size greater than uncompressed would be. Will save anyway.");
+							AfxMessageBox(_T("Warning: RLE file size greater than uncompressed would be. Will save anyway."));
 						}
 					}
 
@@ -1247,14 +1247,14 @@ void CTIPicViewDlg::OnButton4()
 					// pattern table first
 					unsigned char *p = 0x3fe+XBWorkBuf;
 					if ((*p!=0xcd)||(*(p+1)!=0xe6)) {
-						AfxMessageBox("Internal error finding pattern table location.");
+						AfxMessageBox(_T("Internal error finding pattern table location."));
 					} else {
 						UpdateWorkBuf(pbuf, p, nOutputPSize);
 					}
 					// then color table
 					p = 0x1c2e+XBWorkBuf;
 					if ((*p!=0xe5)||(*(p+1)!=0xe6)) {
-						AfxMessageBox("Internal error finding color table location.");
+						AfxMessageBox(_T("Internal error finding color table location."));
 					} else {
 						if (nOutputCSize == 0) {
 							// make a fake one
@@ -1286,7 +1286,7 @@ void CTIPicViewDlg::OnButton4()
 					}
 
 					if (sizeP+sizeC > nOutputPSize+nOutputCSize) {
-						AfxMessageBox("Warning: RLE file size greater than uncompressed would be. CAN NOT PROCEED!");
+						AfxMessageBox(_T("Warning: RLE file size greater than uncompressed would be. CAN NOT PROCEED!"));
 						break;
 					}
 
@@ -1307,7 +1307,7 @@ void CTIPicViewDlg::OnButton4()
 					// pattern table first
 					unsigned char *p = 0x3fe+XBWorkBuf;
 					if ((*p!=0xcd)||(*(p+1)!=0xe6)) {
-						AfxMessageBox("Internal error finding pattern table location.");
+						AfxMessageBox(_T("Internal error finding pattern table location."));
 					} else {
 						p = UpdateWorkBuf(pRLEP, p, sizeP);
 						if (sizeP&0x01) {
@@ -1341,7 +1341,7 @@ void CTIPicViewDlg::OnButton4()
 
 					// update the line number table pointers
 					for (int nIdx = 0x181; nIdx<0x181+nLineSize; nIdx+=4) {
-//						debug("Relocate line %d...\n",XBWorkBuf[nIdx]*256+XBWorkBuf[nIdx+1]);
+//						debug(_T("Relocate line %d...\n"),XBWorkBuf[nIdx]*256+XBWorkBuf[nIdx+1]);
 						int nAddress = XBWorkBuf[nIdx+2]*256+XBWorkBuf[nIdx+3];
 						nAddress += nNewXBOffset;
 						XBWorkBuf[nIdx+2] = nAddress/256;
@@ -1468,7 +1468,7 @@ void CTIPicViewDlg::OnButton4()
 	
 					// get the resource into our work buffer (on the stack. good lord.)
 					memset(buf, 0, sizeof(buf));
-					hRsrc=FindResource(NULL, MAKEINTRESOURCE(IDR_COLECOROM), "ROM");
+					hRsrc=FindResource(NULL, MAKEINTRESOURCE(IDR_COLECOROM), _T("ROM"));
 					if (hRsrc) {
 						int nRealLen=SizeofResource(NULL, hRsrc);
 
@@ -1478,11 +1478,11 @@ void CTIPicViewDlg::OnButton4()
 							memcpy(buf, pData, nRealLen);
 							nSize=nRealLen;
 						} else {
-							AfxMessageBox("Can't build ROM - internal error 1");
+							AfxMessageBox(_T("Can't build ROM - internal error 1"));
 							return;
 						}
 					} else {
-						AfxMessageBox("Can't build ROM - internal error 2");
+						AfxMessageBox(_T("Can't build ROM - internal error 2"));
 						return;
 					}
 
@@ -1551,14 +1551,14 @@ void CTIPicViewDlg::OnButton4()
 
 void CTIPicViewDlg::OnDropFiles(HDROP hDropInfo) 
 {
-	char szFile[1024];
+	wchar_t szFile[1024];
 
-	ZeroMemory(szFile, 1024);
+	ZeroMemory(szFile, sizeof(szFile));
 
 	DragQueryFile(hDropInfo, 0, szFile, 1024);
 	DragFinish(hDropInfo);
 
-	if (strlen(szFile)) {
+	if (wcslen(szFile)) {
 		LaunchMain(2,szFile);
 	}
 }
@@ -1579,7 +1579,7 @@ void CTIPicViewDlg::OnBnClickedButton3()
 			heightoffset-=4;
 		}
 	}
-	LaunchMain(1,NULL);
+	LaunchMain(1,"");
 }
 
 void CTIPicViewDlg::OnBnClickedButton5()
@@ -1598,7 +1598,7 @@ void CTIPicViewDlg::OnBnClickedButton5()
 			heightoffset+=4;
 		}
 	}
-	LaunchMain(1,NULL);
+	LaunchMain(1,"");
 }
 
 void CTIPicViewDlg::EnableItem(int Ctrl) {
@@ -1649,7 +1649,7 @@ void CTIPicViewDlg::OnBnClickedPercept()
 	OnCbnSelchangeCombo1();
 }
 
-void CTIPicViewDlg::LaunchMain(int mode, char *pFile) {
+void CTIPicViewDlg::LaunchMain(int mode, CString pFile) {
 	CollectData();
 
 	PIXA=m_pixelA;
@@ -1682,7 +1682,7 @@ void CTIPicViewDlg::LaunchMain(int mode, char *pFile) {
 
 void CTIPicViewDlg::OnBnClickedReload()
 {
-	LaunchMain(1,NULL);
+	LaunchMain(1,"");
 }
 
 void CTIPicViewDlg::OnCbnSelchangeCombo1()
@@ -1866,7 +1866,7 @@ void CTIPicViewDlg::MakeConversionModeValid() {
 
 bool CTIPicViewDlg::ResetToValidConversion() {
 	if (nLastValidConversionMode != m_ctrlList.GetCurSel()) {
-		if (IDNO == AfxMessageBox("Warning: Image has not been converted since mode was changed -- save in old mode?", MB_YESNO)) {
+		if (IDNO == AfxMessageBox(_T("Warning: Image has not been converted since mode was changed -- save in old mode?"), MB_YESNO)) {
 			return false;
 		}
 		m_ctrlList.SetCurSel(nLastValidConversionMode);
@@ -2125,13 +2125,13 @@ void CTIPicViewDlg::OnTimer(UINT_PTR nIDEvent)
 	if (NULL != pSharedPointer) {
 		// this isn't very atomic, but, it's never supposed to
 		// change after the first time it's set.
-		char buf[256];
-		memcpy(buf, pSharedPointer, 256);
+		wchar_t buf[256];
+		memcpy(buf, pSharedPointer, sizeof(buf));
 //		InterlockedExchange((LONG*)pSharedPointer, 0);	// this only works as long as it takes us longer to load the image as the other app needs to scan.
 														// TODO: we could do better.
 
 		if (buf[0] != '\0') {
-			if (0 != strcmp(szLastFilename, buf)) {
+			if (0 != wcscmp(szLastFilename, buf)) {
 				// don't bother if it's the same as we already have
 				LaunchMain(2, buf);
 			}

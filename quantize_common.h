@@ -1,6 +1,6 @@
 // The following parts are the same for all the quantize methods
 
-extern char *cmdFileIn;
+extern wchar_t *cmdFileIn;
 extern bool fVerbose;
 extern MYRGBQUAD palinit16[256];
 extern float_precision g_thresholdMap2x2[2][2];
@@ -90,7 +90,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 		// do we need to calculate any fixed colors?
 		if (nFixedColors > 0) {
 			if (g_bStaticByPopularity) {
-				debug("Preserving %d top colors (popularity)\n", nFixedColors);
+				debug(_T("Preserving %d top colors (popularity)\n"), nFixedColors);
 
 				int nColCount = 0;
 
@@ -129,7 +129,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 						}
 					}
 				}
-				debug("%d relevant colors detected (%d%%).\n", nColCount, nColCount*100/4096);
+				debug(_T("%d relevant colors detected (%d%%).\n"), nColCount, nColCount*100/4096);
 
 				// should have (up to) 15 colors sorted now, grab the top x (popularity)
 				for (int idx=0; idx<nFixedColors; idx++) {
@@ -140,7 +140,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 					makeYUV(pal[idx+1][0], pal[idx+1][1], pal[idx+1][2], YUVpal[idx+1][0], YUVpal[idx+1][1], YUVpal[idx+1][2]);
 				}
 			} else {
-				debug("Preserving %d top colors (median cut)\n", nFixedColors);
+				debug(_T("Preserving %d top colors (median cut)\n"), nFixedColors);
 				// need to make a work copy of the image
 				// this uses median cut over the entire image down to the number of static colors
 				unsigned char *pWork = (unsigned char*)malloc(256*192*3);
@@ -745,6 +745,6 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 #endif
 
 	time(&nEndTime);
-	debug("Conversion time: %d seconds\n", nEndTime-nStartTime);
+	debug(_T("Conversion time: %d seconds\n"), nEndTime-nStartTime);
 }
 

@@ -12,7 +12,7 @@
 #include <crtdbg.h>
 
 #include "tipicview.h"
-#include "D:\WORK\imgsource\4.0\islibs40_vs05\ISource.h"
+#include "D:\WORK\imgsource\4.0\islibs40_vs17_unicode\ISource.h"
 #include "2passscale.h"
 #include "TIPicViewDlg.h"
 
@@ -23,13 +23,13 @@ void MYRGBTo8BitDithered(BYTE *pRGB, BYTE *p8Bit, MYRGBQUAD *pal, double dark);
 
 int pixeloffset;
 int heightoffset;
-char szFiles[MAXFILES][256];
-char *pTmp;
+wchar_t szFiles[MAXFILES][256];
+wchar_t *pTmp;
 int iCnt, n, ret, errCount;
 unsigned int idx1, idx2;
 int ScaleMode;
-char szFolder[256];
-char szBuf[256];
+wchar_t szFolder[256];
+wchar_t szBuf[256];
 unsigned int iWidth, iHeight;
 unsigned int inWidth, inHeight;
 unsigned int outWidth, outHeight;
@@ -62,17 +62,17 @@ extern int g_MaxMultiDiff;
 extern int g_MaxColDiff;
 extern int g_OrderedDither;
 extern int g_MapSize;
-extern char *cmdFileIn;		// from command line, makes a non-GUI mode
-extern char *cmdFileOut;
-extern HGLOBAL load_gif(char *filename, unsigned int *iWidth, unsigned int *iHeight);
+extern wchar_t *cmdFileIn;		// from command line, makes a non-GUI mode
+extern wchar_t *cmdFileOut;
+extern HGLOBAL load_gif(wchar_t *filename, unsigned int *iWidth, unsigned int *iHeight);
 MYRGBQUAD pal[256];
 
 extern LPVOID pSharedPointer;
-extern char szLastFilename[256];	// used to make sure we don't reload our own shared file
+extern wchar_t szLastFilename[256];	// used to make sure we don't reload our own shared file
 
 int instr(unsigned short *, char*);
 bool ScalePic(int nFilter, int nPortraitMode);
-void BuildFileList(char *szFolder);
+void BuildFileList(wchar_t *szFolder);
 BOOL ResizeRGBBiCubic(BYTE *pImgSrc, UINT32 uSrcWidthPix, UINT32 uSrcHeight, BYTE *pImgDest, UINT32 uDestWidthPix, UINT32 uDestHeight);
 
 // BIG NOTE! WHITE IS INSERTED AS COLOR 0, and TRANSPARENT IS NOT PRESENT
@@ -190,15 +190,15 @@ unsigned char orig8[256*192];
 CWnd *pWnd;
 
 // simple wrapper for debug - command line mode is normally quiet unless verbose is set
-void debug(char *s, ...) {
+void debug(wchar_t *s, ...) {
 	if ((cmdFileIn == NULL) || (fVerbose)) {
-		char buf[1024];
+		wchar_t buf[1024];
 
-		_vsnprintf(buf, 1023, s, (char*)((&s)+1));
+		_vsnwprintf(buf, 1023, s, (char*)((&s)+1));
 		buf[1023]='\0';
 
 		OutputDebugString(buf);
-		printf("%s",buf);
+		printf("%S",buf);
 	}
 }
 
@@ -227,9 +227,9 @@ HGLOBAL ReadTIArtist(CString csFile) {
 	}
 
 	FILE *fp=NULL;
-	fopen_s(&fp, csFile, "rb");
+	_wfopen_s(&fp, csFile, _T("rb"));
 	if (NULL == fp) {
-		printf("Can't open %s\n", (LPCSTR)csFile);
+		printf("Can't open %S\n", (LPCWSTR)csFile);
 		return NULL;
 	}
 
@@ -237,7 +237,7 @@ HGLOBAL ReadTIArtist(CString csFile) {
 	fread(identifier, 1, 128, fp);
 
 	// check header
-	if ((identifier[0]==7) && 
+	if ((identifier[0]=='\x7') && 
 		(identifier[1]=='T') && 
 		(identifier[2]=='I') && 
 		(identifier[3]=='F') && 
@@ -245,7 +245,7 @@ HGLOBAL ReadTIArtist(CString csFile) {
 		(identifier[5]=='L') && 
 		(identifier[6]=='E') && 
 		(identifier[7]=='S') &&		// tag
-		(identifier[10]==1) &&		// PROGRAM
+		(((identifier[10])&0x07)==1) &&		// PROGRAM (ignore protection)
 		(identifier[8]==0) &&		// size in sectors (6144 byte file)
 		(identifier[9]==0x18)) {
 			goto test2;				// just to indicate okay, we don't read the header again after this
@@ -262,7 +262,7 @@ HGLOBAL ReadTIArtist(CString csFile) {
 		(isprint(identifier[7]) || isspace(identifier[7])) &&
 		(isprint(identifier[8]) || isspace(identifier[8])) &&
 		(isprint(identifier[9]) || isspace(identifier[9])) &&	// filename
-		(identifier[12]==1) &&		// PROGRAM
+		(((identifier[12])&0x07)==1) &&		// PROGRAM (ignore protection)
 		(identifier[14]==0) &&		// size in sectors (6144 byte file)
 		(identifier[15]==0x18)) {
 			goto test2;				// just to indicate okay, we don't read the header again after this
@@ -321,9 +321,9 @@ test2:
 	csFile+='C';
 
 	fp=NULL;
-	fopen_s(&fp, csFile, "rb");
+	_wfopen_s(&fp, csFile, _T("rb"));
 	if (NULL == fp) {
-		printf("Can't open %s (mono file assumed)\n", (LPCSTR)csFile);
+		printf("Can't open %S (mono file assumed)\n", (LPCWSTR)csFile);
 		memset(pBuf+6144, 0x1f, 6144);
 	} else {
 		// just assume the _c is the same as the _p
@@ -362,9 +362,9 @@ test2:
 	csFile+='M';
 
 	fp=NULL;
-	fopen_s(&fp, csFile, "rb");
+	_wfopen_s(&fp, csFile, _T("rb"));
 	if (NULL == fp) {
-		printf("Can't open %s (non-extended file assumed)\n", (LPCSTR)csFile);
+		printf("Can't open %S (non-extended file assumed)\n", (LPCWSTR)csFile);
 		memset(pBuf+6144*2, 0, 6144);
 	} else {
 		// just assume the _c is the same as the _p
@@ -502,16 +502,16 @@ void app_handler(const wchar_t * expression,
 // Mode 1 - reload image - if pFile is NULL, use last from list, else use passed file
 // Mode 2 - load specific image and remember it
 // 'dark' is a value from 0-16 and is the amount to darken for ordered dither
-void maincode(int mode, char *pFile, double dark)
+void maincode(int mode, CString pFile, double dark)
 {
 	// initialize
 	bool fArgsOK=true;
 	static bool fHaveFiles=false;
 	static bool initialized=false;
-	char szFileName[256];
+	wchar_t szFileName[256];
 	static int nlastpick=-1;
 	int noldlast;
-	char szOldFN[256];
+	wchar_t szOldFN[256];
 
 	if (!initialized) {
 		IS40_Initialize("{887916EA-FAE3-12E2-19C1-8B0FC40F045F}");	// please do not reuse this key in other applications
@@ -541,7 +541,7 @@ void maincode(int mode, char *pFile, double dark)
 
 	if (mode == 0) {
 		// Set defaults
-		strcpy_s(szFolder, 256, pFile);
+		wcscpy_s(szFolder, 256, pFile);
 	}
 
 	iWidth=256;
@@ -552,7 +552,7 @@ void maincode(int mode, char *pFile, double dark)
 	maxerrorcount=6;
 
 	if (mode == 0) {
-		if ((!fHaveFiles)&&(NULL != pFile)) {
+		if ((!fHaveFiles)&&(pFile.GetLength() > 0)) {
 			// get list of files
 			iCnt=0;
 			BuildFileList(szFolder);
@@ -561,7 +561,7 @@ void maincode(int mode, char *pFile, double dark)
 
 			if (0==iCnt) {
 				printf("That's an error\n");
-				AfxMessageBox("The 'rnd' function currently only works if you have a c:\\pics folder.");
+				AfxMessageBox(_T("The 'rnd' function currently only works if you have a c:\\pics folder."));
 				return;
 			}
 
@@ -577,7 +577,7 @@ void maincode(int mode, char *pFile, double dark)
 	hBuffer2=NULL;
 	noldlast=nlastpick;
 	if (noldlast != -1) {
-		strcpy_s(szOldFN, 256, szFiles[nlastpick]);
+		wcscpy_s(szOldFN, 256, szFiles[nlastpick]);
 	}
 
 
@@ -606,22 +606,22 @@ void maincode(int mode, char *pFile, double dark)
 				*((unsigned char*)hBuffer+idx+2) = ((mode&0xf)<<4)|((mode&0xf));
 			}
 			n=MAXFILES-1;
-			sprintf_s(szFiles[n], "RGB_0x%04X", mode);
+			swprintf_s(szFiles[n], _T("RGB_0x%04X"), mode);
 			inWidth=256;
 			inHeight=192;
 		} else if ((1 == mode) || (2 == mode)) {
-			if ((pFile == NULL) && (-1 != nlastpick)) {
+			if ((pFile.IsEmpty()) && (-1 != nlastpick)) {
 				n=nlastpick;
 			} else {
-				if (pFile == NULL) {
+				if (pFile.IsEmpty()) {
 					return;
 				}
 				n=MAXFILES-1;
-				strcpy_s(szFiles[n], 256, pFile);
+				wcscpy_s(szFiles[n], 256, pFile);
 			}
 		} else {
 			if (nlastpick!=-1) {
-				strcpy_s(szFiles[nlastpick],256, "");		// so we don't choose it again
+				wcscpy_s(szFiles[nlastpick],256, _T(""));		// so we don't choose it again
 			}
 			pixeloffset=0;
 			heightoffset=0;
@@ -629,7 +629,7 @@ void maincode(int mode, char *pFile, double dark)
 			if (errCount>6) {
 				printf("Too many errors - stopping.\n");
 				if (noldlast != -1) {
-					strcpy_s(szFiles[noldlast], 256, szOldFN);
+					wcscpy_s(szFiles[noldlast], 256, szOldFN);
 					nlastpick=noldlast;
 				}
 				return;
@@ -637,14 +637,14 @@ void maincode(int mode, char *pFile, double dark)
 
 			n=((rand()<<16)|rand())%iCnt;
 			cntdown=iCnt;
-			while (strlen(szFiles[n]) == 0) {
+			while (wcslen(szFiles[n]) == 0) {
 				n++;
 				if (n>=iCnt) n=0;
 				cntdown--;
 				if (cntdown == 0) {
 					printf("Ran out of images in the list, aborting.\n");
 					if (noldlast != -1) {
-						strcpy_s(szFiles[noldlast], 256, szOldFN);
+						wcscpy_s(szFiles[noldlast], 256, szOldFN);
 						nlastpick=noldlast;
 					}
 					return;
@@ -652,8 +652,8 @@ void maincode(int mode, char *pFile, double dark)
 			}
 		}
 
-		printf("Chose #%d: %s\n", n, &szFiles[n][0]);
-		strcpy_s(szFileName, 256, szFiles[n]);
+		wprintf(L"Chose #%d: %s\n", n, &szFiles[n][0]);
+		wcscpy_s(szFileName, 256, szFiles[n]);
 		nlastpick=n;
 
 		if (NULL != hBuffer) {
@@ -661,10 +661,10 @@ void maincode(int mode, char *pFile, double dark)
 		}
 
 		// dump the data into the shared memory, if available (and not from there)
-		strncpy(szLastFilename, szFileName, 255);		// save the name locally first so we can compare
+		wcsncpy(szLastFilename, szFileName, 255);		// save the name locally first so we can compare
 		if ((pSharedPointer)&&((mode == 0)||(mode==2))) {
 			// we copy the first byte last to ensure it's atomic
-			memcpy((char*)pSharedPointer+1, szFileName+1, 255);
+			memcpy((char*)pSharedPointer+sizeof(szFileName[0]), szFileName+1, sizeof(szFileName));
 			InterlockedExchange((volatile LONG*)pSharedPointer, *((LONG*)szFileName));	// actually writes 32-bits, but guaranteed execution across cores
 		}
 
@@ -712,12 +712,12 @@ void maincode(int mode, char *pFile, double dark)
 			// is it TI Artist?
 			{
 				CString csTmp=szFileName;
-				if ((csTmp.Right(5).CompareNoCase(".TIAP") == 0) ||
-					(csTmp.Right(2).CompareNoCase("_P") == 0) ||
-					(csTmp.Right(5).CompareNoCase(".TIAC") == 0) ||
-					(csTmp.Right(2).CompareNoCase("_C") == 0) ||
-					(csTmp.Right(5).CompareNoCase(".TIAM") == 0) ||
-					(csTmp.Right(2).CompareNoCase("_M") == 0)) {
+				if ((csTmp.Right(5).CompareNoCase(_T(".TIAP")) == 0) ||
+					(csTmp.Right(2).CompareNoCase(_T("_P")) == 0) ||
+					(csTmp.Right(5).CompareNoCase(_T(".TIAC")) == 0) ||
+					(csTmp.Right(2).CompareNoCase(_T("_C")) == 0) ||
+					(csTmp.Right(5).CompareNoCase(_T(".TIAM")) == 0) ||
+					(csTmp.Right(2).CompareNoCase(_T("_M")) == 0)) {
 						// might be! try it!
 						IS40_CloseSource(hSource);
 						hSource=NULL;
@@ -729,7 +729,7 @@ void maincode(int mode, char *pFile, double dark)
 
 			if (NULL == hBuffer) {
 				// not something supported, then
-				printf("Unable to indentify file (corrupt?)\n-> %s <-\n", szFileName);
+				printf("Unable to indentify file (corrupt?)\n-> %S <-\n", szFileName);
 				IS40_CloseSource(hSource);
 				return;
 			} else {
@@ -932,11 +932,11 @@ ohJustSkipTheLoad:
 			}
 		}
 
-		debug("Reducing colors...\n");
+		debug(_T("Reducing colors...\n"));
 		MYRGBTo8BitDithered((unsigned char*)hBuffer2, buf8, pal, dark);
 	}
 
-	debug("\n");
+	debug(_T("\n"));
 
 	// Note: if we want to save the image in TI format, there is a macro in TIPicViewDlg to do it
 
@@ -944,7 +944,7 @@ ohJustSkipTheLoad:
 	if (NULL != pWnd) {
 		// temp hack - don't overdraw if it's using per-line palette (this approach won't work)
 		if (!g_UsePerLinePalette) {
-			debug("Draw final image...\n");
+			debug(_T("Draw final image...\n"));
 			CDC *pCDC=pWnd->GetDC();
 			if (NULL != pCDC) {
 				int dpi = GetDpiForWindow(pWnd->GetSafeHwnd());
@@ -970,14 +970,14 @@ ohJustSkipTheLoad:
 	delete[] hBuffer2;
 }
 
-void BuildFileList(char *szFolder)
+void BuildFileList(wchar_t *szFolder)
 {
 	HANDLE hIndex;
 	WIN32_FIND_DATA dat;
-	char buffer[256];
+	wchar_t buffer[256];
 
-	strcpy_s(buffer, 256, szFolder);
-	strcat_s(buffer, 256, "\\*.*");
+	wcscpy_s(buffer, 256, szFolder);
+	wcscat_s(buffer, 256, _T("\\*.*"));
 	hIndex=FindFirstFile(buffer, &dat);
 
 	while (INVALID_HANDLE_VALUE != hIndex) {
@@ -986,9 +986,9 @@ void BuildFileList(char *szFolder)
 			return;
 		}
 		
-		strcpy_s(buffer, 256, szFolder);
-		strcat_s(buffer, 256, "\\");
-		strcat_s(buffer, 256, dat.cFileName);
+		wcscpy_s(buffer, 256, szFolder);
+		wcscat_s(buffer, 256, _T("\\"));
+		wcscat_s(buffer, 256, dat.cFileName);
 
 		if (dat.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 			if (dat.cFileName[0]=='.') goto next;
@@ -998,24 +998,24 @@ void BuildFileList(char *szFolder)
 
 		// BMP, GIF, JPG, PNG, PCX, TIF
 		// Check last three characters
-		if ((0==_stricmp(&buffer[strlen(buffer)-3], "bmp")) ||
-			(0==_stricmp(&buffer[strlen(buffer)-4], "tiap")) ||
-			(0==_stricmp(&buffer[strlen(buffer)-3], "gif")) ||
-			(0==_stricmp(&buffer[strlen(buffer)-3], "jpg")) ||
-			(0==_stricmp(&buffer[strlen(buffer)-4], "jpeg")) ||
-			(0==_stricmp(&buffer[strlen(buffer)-3], "jpc")) ||
-			(0==_stricmp(&buffer[strlen(buffer)-3], "png")) ||
-			(0==_stricmp(&buffer[strlen(buffer)-3], "pcx")) ||
-			(0==_stricmp(&buffer[strlen(buffer)-4], "tiff")) ||
-			(0==_stricmp(&buffer[strlen(buffer)-3], "tif"))) {
-				strcpy_s(&szFiles[iCnt++][0], 256, buffer);
+		if ((0==_wcsicmp(&buffer[wcslen(buffer)-3], _T("bmp"))) ||
+			(0==_wcsicmp(&buffer[wcslen(buffer)-4], _T("tiap"))) ||
+			(0==_wcsicmp(&buffer[wcslen(buffer)-3], _T("gif"))) ||
+			(0==_wcsicmp(&buffer[wcslen(buffer)-3], _T("jpg"))) ||
+			(0==_wcsicmp(&buffer[wcslen(buffer)-4], _T("jpeg"))) ||
+			(0==_wcsicmp(&buffer[wcslen(buffer)-3], _T("jpc"))) ||
+			(0==_wcsicmp(&buffer[wcslen(buffer)-3], _T("png"))) ||
+			(0==_wcsicmp(&buffer[wcslen(buffer)-3], _T("pcx"))) ||
+			(0==_wcsicmp(&buffer[wcslen(buffer)-4], _T("tiff"))) ||
+			(0==_wcsicmp(&buffer[wcslen(buffer)-3], _T("tif")))) {
+				wcscpy_s(&szFiles[iCnt++][0], 256, buffer);
 		}
 
 next:
 		if (false == FindNextFile(hIndex, &dat)) {
 			int ret;
 			if ((ret=GetLastError()) != ERROR_NO_MORE_FILES) {
-				OutputDebugString("Error in findnextfile\n");
+				OutputDebugString(_T("Error in findnextfile\n"));
 			}
 			FindClose(hIndex);
 			hIndex=INVALID_HANDLE_VALUE;
@@ -1034,8 +1034,8 @@ bool ScalePic(int nFilter, int nPortraitMode)
 	unsigned int thisx, thisy;
 	HGLOBAL tmpBuffer;
 	
-	debug("Image:  %d x %d\n",inWidth, inHeight);
-	debug("Output: %d x %d\n",currentw, currenth);
+	debug(_T("Image:  %d x %d\n"),inWidth, inHeight);
+	debug(_T("Output: %d x %d\n"),currentw, currenth);
 	
 	x1=(float_precision)(inWidth);
 	y1=(float_precision)(inHeight);
@@ -1043,16 +1043,16 @@ bool ScalePic(int nFilter, int nPortraitMode)
 	x_scale=((float_precision)(currentw))/x1;
 	y_scale=((float_precision)(currenth))/y1;
 
-	debug("Scale:  %f x %f\n",x_scale,y_scale);
+	debug(_T("Scale:  %f x %f\n"),x_scale,y_scale);
 	
 	if (ScaleMode == -1) {
 		ScaleMode=Y_AXIS;
 	
 		if (y1*x_scale > (float_precision)(currenth)) ScaleMode=Y_AXIS;
 		if (x1*y_scale > (float_precision)(currentw)) ScaleMode=X_AXIS;
-		debug("Decided scale (1=X, 2=Y): %d\n",ScaleMode);
+		debug(_T("Decided scale (1=X, 2=Y): %d\n"),ScaleMode);
 	} else {
-		debug("Using scale (1=X, 2=Y): %d\n",ScaleMode);
+		debug(_T("Using scale (1=X, 2=Y): %d\n"),ScaleMode);
 	}
 	
 	// "portrait mode" is used for both X and Y axis as a fill mode now
@@ -1066,7 +1066,7 @@ bool ScalePic(int nFilter, int nPortraitMode)
 		case 2:		// middle
 		case 3:		// bottom/right
 			// use other axis instead, and we'll crop it after we scale
-			debug("Scaling for fill mode (opposite scale used).\n");
+			debug(_T("Scaling for fill mode (opposite scale used).\n"));
 			if (ScaleMode == Y_AXIS) {
 				ScaleMode=X_AXIS;
 			} else {
@@ -1088,7 +1088,7 @@ bool ScalePic(int nFilter, int nPortraitMode)
 	finalW=(int)(x1);
 	finalH=(int)(y1);
 
-	debug("Output size: %d x %d\n", finalW, finalH);
+	debug(_T("Output size: %d x %d\n"), finalW, finalH);
 
 	switch (nFilter) {
 		case 0 :
@@ -1132,12 +1132,12 @@ bool ScalePic(int nFilter, int nPortraitMode)
 	if (finalH > 192) {
 		int y=0;
 
-		debug("Cropping...\n");
+		debug(_T("Cropping...\n"));
 
 		switch (nPortraitMode) {
 			default:
 			case 0:		// full
-				debug("This could be a problem - image scaled too large!\n");
+				debug(_T("This could be a problem - image scaled too large!\n"));
 				// no change
 				break;
 
@@ -1156,7 +1156,7 @@ bool ScalePic(int nFilter, int nPortraitMode)
 				break;
 		}
 		if (heightoffset != 0) {
-			debug("Vertical nudge %d pixels...\n", heightoffset);
+			debug(_T("Vertical nudge %d pixels...\n"), heightoffset);
 
 			y+=heightoffset;
 			while (y<0) { 
@@ -1178,12 +1178,12 @@ bool ScalePic(int nFilter, int nPortraitMode)
 		int x;
 		unsigned char *p1,*p2;
 
-		debug("Cropping...\n");
+		debug(_T("Cropping...\n"));
 
 		switch (nPortraitMode) {
 			default:
 			case 0:		// full
-				debug("This could be a problem - image scaled too large!\n");
+				debug(_T("This could be a problem - image scaled too large!\n"));
 				// no change
 				x=-1;
 				break;

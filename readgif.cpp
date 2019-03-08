@@ -36,7 +36,7 @@ int width, height, depth;
 int interlace, transparent;
 UINT32 nMaxBytes;
 
-extern HGLOBAL load_gif(char *filename, unsigned int *iWidth, unsigned int *iHeight);
+extern HGLOBAL load_gif(wchar_t *filename, unsigned int *iWidth, unsigned int *iHeight);
 
 int myfgetc(FILE *fp) {
 	static FILE *handle=0;
@@ -175,13 +175,13 @@ int pack_igetw(FILE *f)
  *  Loads a 2-256 colour GIF file onto a bitmap, returning an RGB buffer
  *  and storing the width and height in the passed pointers
  */
-HGLOBAL load_gif(char *filename, unsigned int *iWidth, unsigned int *iHeight)
+HGLOBAL load_gif(wchar_t *filename, unsigned int *iWidth, unsigned int *iHeight)
 {
 	int old;
 
 	transparent=-1;
 
-	fopen_s(&f, filename, "rb");
+	_wfopen_s(&f, filename, L"rb");
 	if (!f) /* can't open file */
 		return NULL;
 

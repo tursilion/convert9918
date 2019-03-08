@@ -70,7 +70,7 @@ public:
 	void ResetControls();
 	void EnableItem(int Ctrl);
 	void DisableItem(int Ctrl);
-	void LaunchMain(int mode, char *pFile);	// wrapper for maincode()
+	void LaunchMain(int mode, CString pFile);	// wrapper for maincode()
 
 	// old ErrDistDlg
 	virtual void PrepareData();
