@@ -3,8 +3,8 @@
 extern wchar_t *cmdFileIn;
 extern bool fVerbose;
 extern MYRGBQUAD palinit16[256];
-extern float_precision g_thresholdMap2x2[2][2];
-extern float_precision g_thresholdMap4x4[4][4];
+extern double g_thresholdMap2x2[2][2];
+extern double g_thresholdMap4x4[4][4];
 
 // macro to change the masking for the threshold map
 #define MAPSEEK(x) (x)&maskval
@@ -18,13 +18,13 @@ extern float_precision g_thresholdMap4x4[4][4];
 void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 	int row,col;
 	// local temporary usage - adjusted map
-	float_precision g_thresholdMap2[4][4];
-	float_precision nDesiredPixels[8][3];		// there are 8 RGB pixels to match
+	double g_thresholdMap2[4][4];
+	double nDesiredPixels[8][3];		// there are 8 RGB pixels to match
 #ifdef ERROR_DISTRIBUTION
-	float_precision fPIXA, fPIXB, fPIXC, fPIXD, fPIXE, fPIXF;
+	double fPIXA, fPIXB, fPIXC, fPIXD, fPIXE, fPIXF;
 #endif
 	int nFixedColors = 0;				// used only when perscanlinepalette is set
-	float_precision (*thresholdMap)[4];
+	double (*thresholdMap)[4];
 	int maskval;
 
 	if (mapSize == 2) {
@@ -57,22 +57,22 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 
 #ifdef ERROR_DISTRIBUTION
 	// convert the integer dither ratios just once up here
-	fPIXA = (float_precision)PIXA/16.0;
-	fPIXB = (float_precision)PIXB/16.0;
-	fPIXC = (float_precision)PIXC/16.0;
-	fPIXD = (float_precision)PIXD/16.0;
-	fPIXE = (float_precision)PIXE/16.0;
-	fPIXF = (float_precision)PIXF/16.0;
+	fPIXA = (double)PIXA/16.0;
+	fPIXB = (double)PIXB/16.0;
+	fPIXC = (double)PIXC/16.0;
+	fPIXD = (double)PIXD/16.0;
+	fPIXE = (double)PIXE/16.0;
+	fPIXF = (double)PIXF/16.0;
 #endif
 
 #ifdef QUANTIZE_FLICKER
 	// square the half-multicolor ratio so we can ignore signs, and scale up to a 0-255 range
-	float_precision ratio = (float_precision)((g_MaxMultiDiff*2.55)*(g_MaxMultiDiff*2.55));
+	double ratio = (double)((g_MaxMultiDiff*2.55)*(g_MaxMultiDiff*2.55));
 #endif
 
 	// create some workspace
 #ifdef ERROR_DISTRIBUTION
-	float_precision *pError = (float_precision*)malloc(sizeof(float_precision)*258*194*3);	// error map, 3 colors, includes 1 pixel border on sides & 2 on bottom (so first entry is x=-1, y=0, and each row is 258 pixels wide)
+	double *pError = (double*)malloc(sizeof(double)*258*194*3);	// error map, 3 colors, includes 1 pixel border on sides & 2 on bottom (so first entry is x=-1, y=0, and each row is 258 pixels wide)
 	for (int idx=0; idx<258*194*3; idx++) {
 		pError[idx]=0.0;
 	}
@@ -205,7 +205,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 		// column (only 2), and top row (only 1). The top left pixel has none, but no divisor
 		// is needed since the stored value is also zero.
 		// there is no notable performance difference to removing this for the accumulate errors mode
-		float_precision nErrDivisor = 3.0;
+		double nErrDivisor = 3.0;
 		if ((row == 0)||(g_AccumulateErrors)) nErrDivisor=1.0;
 #endif
 
@@ -227,7 +227,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 				if (row > 0) {
 					// address of entry in the error table (3 doubles per pixel and larger array)
 #ifdef ERROR_DISTRIBUTION
-					float_precision *pErrLine = pError + (row*258*3) + 3;
+					double *pErrLine = pError + (row*258*3) + 3;
 #endif
 					for (int idx=0; idx<256*3; idx++) {	// we can loop over R,G,B in sequence for this
 						int val = points[idx/3].x[idx%3];
@@ -293,10 +293,10 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 					// this version merges the closest colors until we only have the correct number left
 					// but it weights them by local popularity, including the line above
                     // This is not too bad...
-					float_precision pop[256];		// popularity of each pixel in the row (or 3 rows in the other case)
+					double pop[256];		// popularity of each pixel in the row (or 3 rows in the other case)
 					// in the first pass, each pixel gets 3 points, plus bonus based on how close to the pixels above it is
 					// we weight this pixel with the rows above and below, like so:
-					float_precision maxdist = 256.0*256.0+256.0*256.0+256.0*256.0;
+					double maxdist = 256.0*256.0+256.0*256.0+256.0*256.0;
 					maxdist=sqrt((double)maxdist);
 					for (int idx=0; idx<256; idx++) {
 						// basically increases the popularity of 'this' pixel by how close it is to the ones near it
@@ -309,19 +309,19 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 						if (row>0) {
 							int off=((row-1)*256*3)+(idx-1)*3;	// up and to the left
 							if (idx > 0) {
-								float_precision dist = sqrt((double)yuvdist(*(pRGB+off), *(pRGB+off+1), *(pRGB+off+2), 
+								double dist = sqrt((double)yuvdist(*(pRGB+off), *(pRGB+off+1), *(pRGB+off+2), 
 															points[idx].x[0], points[idx].x[1], points[idx].x[2])) / maxdist;	// 0.0-1.0
 								pop[idx]+=1.0-dist;
 							}
 
 							{
-								float_precision dist = sqrt((double)yuvdist(*(pRGB+off+3), *(pRGB+off+4), *(pRGB+off+5), 
+								double dist = sqrt((double)yuvdist(*(pRGB+off+3), *(pRGB+off+4), *(pRGB+off+5), 
 															points[idx].x[0], points[idx].x[1], points[idx].x[2])) / (maxdist/2.0); // 0.0-2.0
 								pop[idx]+=2.0-dist;
 							}
 
 							if (idx < 255) {
-								float_precision dist = sqrt((double)yuvdist(*(pRGB+off+6), *(pRGB+off+7), *(pRGB+off+8), 
+								double dist = sqrt((double)yuvdist(*(pRGB+off+6), *(pRGB+off+7), *(pRGB+off+8), 
 															points[idx].x[0], points[idx].x[1], points[idx].x[2])) / maxdist; // 0.0-1.0
 								pop[idx]+=1.0-dist;
 							}
@@ -329,19 +329,19 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 						if (row<191) {
 							int off=((row+1)*256*3)+(idx-1)*3;	// down and to the left
 							if (idx > 0) {
-								float_precision dist = sqrt((double)yuvdist(*(pRGB+off), *(pRGB+off+1), *(pRGB+off+2), 
+								double dist = sqrt((double)yuvdist(*(pRGB+off), *(pRGB+off+1), *(pRGB+off+2), 
 															points[idx].x[0], points[idx].x[1], points[idx].x[2])) / maxdist; // 0.0-1.0
 								pop[idx]+=1.0-dist;
 							}
 
 							{
-								float_precision dist = sqrt((double)yuvdist(*(pRGB+off+3), *(pRGB+off+4), *(pRGB+off+5), 
+								double dist = sqrt((double)yuvdist(*(pRGB+off+3), *(pRGB+off+4), *(pRGB+off+5), 
 															points[idx].x[0], points[idx].x[1], points[idx].x[2])) / (maxdist/2.0); // 0.0-2.0
 								pop[idx]+=2.0-dist;
 							}
 
 							if (idx < 255) {
-								float_precision dist = sqrt((double)yuvdist(*(pRGB+off+6), *(pRGB+off+7), *(pRGB+off+8), 
+								double dist = sqrt((double)yuvdist(*(pRGB+off+6), *(pRGB+off+7), *(pRGB+off+8), 
 															points[idx].x[0], points[idx].x[1], points[idx].x[2])) / maxdist; // 0.0-1.0
 								pop[idx]+=1.0-dist;
 							}
@@ -366,14 +366,14 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 
 					while (nCols > 15-nFixedColors) {
 						// choose two colors to merge by their distance weighted by popularity scores (more popular makes farther apart)
-						float_precision mindist=0x7fffffff;
+						double mindist=0x7fffffff;
 						int mindistp1=0, mindistp2=0;
 						for (int idx=0; idx<256; idx++) {
 							if (pop[idx]==0) continue;
 							for (int idx2=idx+1; idx2<256; idx2++) {
 								if (pop[idx2]==0) continue;
 
-								float_precision dist = yuvdist(points[idx].x[0], points[idx].x[1], points[idx].x[2], points[idx2].x[0], points[idx2].x[1], points[idx2].x[2]) * pop[idx] * pop[idx2];
+								double dist = yuvdist(points[idx].x[0], points[idx].x[1], points[idx].x[2], points[idx2].x[0], points[idx2].x[1], points[idx2].x[2]) * pop[idx] * pop[idx2];
 
 								if (dist < mindist) {
 									mindistp1=idx;
@@ -398,7 +398,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 							if ( (MakeRoundedRGB(points[mindistp1].x[0]) == MakeRoundedRGB(points[idx].x[0])) && 
 								 (MakeRoundedRGB(points[mindistp1].x[1]) == MakeRoundedRGB(points[idx].x[1])) &&
 								 (MakeRoundedRGB(points[mindistp1].x[2]) == MakeRoundedRGB(points[idx].x[2])) ) {
-                                    float_precision oldp = pop[idx];
+                                    double oldp = pop[idx];
 									pop[idx]+=pop[mindistp1];	// we can't load into mindistp1 because there may be others
 									pop[mindistp1]=0;
 									nCols--;
@@ -454,20 +454,20 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 
 #ifdef ERROR_DISTRIBUTION
 			// address of entry in the error table (3 doubles per pixel and larger array)
-			float_precision *pErrLine = pError + (row*258*3) + ((col+1)*3);
+			double *pErrLine = pError + (row*258*3) + ((col+1)*3);
 #endif
 
 			// our first job is to get the desired pixel pattern for this block of 8 pixels
 			// This takes the original image, and adds in the data from the error map. We do
-			// all matching in float_precision mode now.
+			// all matching in double mode now.
 			for (int c=0; c<8; c++, pInLine+=3
 #ifdef ERROR_DISTRIBUTION
 				, pErrLine+=3
 #endif
 				) {
-				nDesiredPixels[c][0] = (float_precision)(*pInLine);		// red
-				nDesiredPixels[c][1] = (float_precision)(*(pInLine+1));	// green
-				nDesiredPixels[c][2] = (float_precision)(*(pInLine+2));	// blue
+				nDesiredPixels[c][0] = (double)(*pInLine);		// red
+				nDesiredPixels[c][1] = (double)(*(pInLine+1));	// green
+				nDesiredPixels[c][2] = (double)(*(pInLine+2));	// blue
 
 				// don't dither if the desired color is pure black or white (helps reduce error spread)	
 				if ((nDesiredPixels[c][0]<=8)&&(nDesiredPixels[c][1]<=8)&&(nDesiredPixels[c][2]<=8)) continue;
@@ -488,13 +488,13 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 			}
 
 			// tracks the best distance (starts out bigger than expected)
-			float_precision nBestDistance = 256.0*256.0*256.0*256.0;
+			double nBestDistance = 256.0*256.0*256.0*256.0*256.0*256.0;
 			int nBestFg=0;
 			int nBestBg=0;
 			int nBestPat=0;
 
 #ifdef ERROR_DISTRIBUTION
-			float_precision nErrorOutput[6];				// saves the error output for the next horizontal pixel (vertical only calculated on the best match)
+			double nErrorOutput[6];				// saves the error output for the next horizontal pixel (vertical only calculated on the best match)
 			// zero the error output (will be set to the best match only)
 			for (int i1=0; i1<6; i1++) {
 				nErrorOutput[i1]=0.0;
@@ -525,10 +525,10 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 					uchar *pPal3=pal[(fg<<4)|fg];
 					uchar *pPal4=pal[(bg<<4)|bg];
 					// luminence always uses the 'perceptual' mapping (but this is NOT configurable)
-					float_precision lum1=pPal1[0]*0.30+pPal1[1]*0.59+pPal1[2]*0.11;
-					float_precision lum2=pPal2[0]*0.30+pPal2[1]*0.59+pPal2[2]*0.11;
-					float_precision lum3=pPal3[0]*0.30+pPal3[1]*0.59+pPal3[2]*0.11;
-					float_precision lum4=pPal4[0]*0.30+pPal4[1]*0.59+pPal4[2]*0.11;
+					double lum1=pPal1[0]*0.30+pPal1[1]*0.59+pPal1[2]*0.11;
+					double lum2=pPal2[0]*0.30+pPal2[1]*0.59+pPal2[2]*0.11;
+					double lum3=pPal3[0]*0.30+pPal3[1]*0.59+pPal3[2]*0.11;
+					double lum4=pPal4[0]*0.30+pPal4[1]*0.59+pPal4[2]*0.11;
 					// and finally, check the differences against the maximum scale
 					if ((lum1*lum1)-(lum3*lum3) > ratio) continue;
 					if ((lum1*lum1)-(lum4*lum4) > ratio) continue;
@@ -544,12 +544,12 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 					}
 					for (int pat=patstart; pat<patend; pat++) {
 						// happens 30,705 times
-						float_precision t1,t2,t3;
-						float_precision nCurDistance;
+						double t1,t2,t3;
+						double nCurDistance;
 						int nMask=0x80;
 
 #ifdef ERROR_DISTRIBUTION
-						float_precision tmpR, tmpG, tmpB, farR, farG, farB;
+						double tmpR, tmpG, tmpB, farR, farG, farB;
 						tmpR=0.0;	// these are used before being overwritten, so they must be initialized
 						tmpG=0.0;
 						tmpB=0.0;
@@ -587,7 +587,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 							// but we'll live with it for now
 
 							// update the total error
-							float_precision r,g,b;
+							double r,g,b;
 							// get RGB
 							r=nDesiredPixels[bit][0];
 							g=nDesiredPixels[bit][1];
@@ -676,7 +676,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 			for (int bit=0; bit<8; bit++) {
 				int nCol;
 #ifdef ERROR_DISTRIBUTION
-				float_precision err;
+				double err;
 #endif
 
 #ifdef QUANTIZE_FLICKER

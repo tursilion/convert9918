@@ -35,7 +35,7 @@ typedef struct tagMYRGBQUAD {
 
 // change between float or double here
 // for all that effort, though, float is NOT faster than double
-typedef double float_precision;
+//typedef double double;
 
 // we manually wrap the Win10 function GetDpiForWindow()
 UINT WINAPI GetDpiForWindow(_In_ HWND hWnd);
@@ -85,10 +85,10 @@ void debug(wchar_t *s, ...);
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.
 
-float_precision yuvdist(float_precision r1, float_precision g1, float_precision b1, float_precision r2, float_precision g2, float_precision b2);
-float_precision yuvpaldist(float_precision r1, float_precision g1, float_precision b1, int nCol);
-void makeYUV(float_precision r, float_precision g, float_precision b, float_precision &y, float_precision &u, float_precision &v);
-void makeY(float_precision r, float_precision g, float_precision b, float_precision &y);
+double yuvdist(double r1, double g1, double b1, double r2, double g2, double b2);
+double yuvpaldist(double r1, double g1, double b1, int nCol);
+void makeYUV(double r, double g, double b, double &y, double &u, double &v);
+void makeY(double r, double g, double b, double &y);
 void buildlookup();
 
 #endif // !defined(AFX_TIPICVIEW_H__F4725884_9A29_4492_AE12_0E3B106C2738__INCLUDED_)

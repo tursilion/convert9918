@@ -52,9 +52,9 @@ extern int g_nPortraitMode;
 extern int g_UsePerLinePalette;
 extern int g_UseColorOnly;
 extern int g_MatchColors;
-extern float_precision g_PercepR, g_PercepG, g_PercepB;
-extern float_precision g_LumaEmphasis;
-extern float_precision g_Gamma;
+extern double g_PercepR, g_PercepG, g_PercepB;
+extern double g_LumaEmphasis;
+extern double g_Gamma;
 extern int g_Perceptual;
 extern int g_UsePalette;
 extern int g_UseHalfMulticolor;
@@ -175,11 +175,11 @@ MYRGBQUAD defaultpalinit16[16];
 
 // ordered dither threshold maps
 // 3 and 8 didn't look very good due to color clash
-float_precision g_thresholdMap2x2[2][2] = {
+double g_thresholdMap2x2[2][2] = {
 	0, 2,
 	3, 1
 };
-float_precision g_thresholdMap4x4[4][4] = {
+double g_thresholdMap4x4[4][4] = {
 	 0,	 8,	 2,	10,
 	12,	 4,	14,	 6,
 	 3,	11,	 1,	 9,
@@ -529,12 +529,12 @@ void maincode(int mode, CString pFile, double dark)
 		// update threshold maps - they're supposed to be fractional
 		for (int i1=0; i1<2; i1++) {
 			for (int i2=0; i2<2; i2++) {
-				g_thresholdMap2x2[i1][i2] /= (float_precision)(4.0);
+				g_thresholdMap2x2[i1][i2] /= (double)(4.0);
 			}
 		}
 		for (int i1=0; i1<4; i1++) {
 			for (int i2=0; i2<4; i2++) {
-				g_thresholdMap4x4[i1][i2] /= (float_precision)(16.0);
+				g_thresholdMap4x4[i1][i2] /= (double)(16.0);
 			}
 		}
 	}
@@ -763,9 +763,9 @@ ohJustSkipTheLoad:
 				g=pBuf[idx+1];
 				b=pBuf[idx+2];
 				if (g_Perceptual) {
-					x=(int)(((float_precision)r*g_PercepR) + ((float_precision)g*g_PercepG) + ((float_precision)b*g_PercepB) + 0.5);
+					x=(int)(((double)r*g_PercepR) + ((double)g*g_PercepG) + ((double)b*g_PercepB) + 0.5);
 				} else {
-					float_precision y;
+					double y;
 					makeY(r, g, b, y);
 					x=(int)y;
 				}
@@ -858,19 +858,19 @@ ohJustSkipTheLoad:
 				if (g_MaxColDiff > 0) {
 					// diff is 0-100% for how far we can shift towards a valid color
 					// max distance in color space is SQRT(255^2+255^2+255^2) = 441.673 units (so the 255 is kind of arbitrary)
-					const float_precision maxrange = ((255*255)+(255*255)+(255*255))*(((float_precision)g_MaxColDiff/100.0)*((float_precision)g_MaxColDiff/100.0));		// scaled distance squared
+					const double maxrange = ((255*255)+(255*255)+(255*255))*(((double)g_MaxColDiff/100.0)*((double)g_MaxColDiff/100.0));		// scaled distance squared
 					unsigned char *pWork = (unsigned char*)hBuffer2;
 					for (int idx=0; idx<256*192; idx++) {
 						int r = *(pWork);
 						int g = *(pWork+1);
 						int b = *(pWork+2);
-						float_precision mindist = ((255*255)+(255*255)+(255*255));
+						double mindist = ((255*255)+(255*255)+(255*255));
 						int best = 0;
 						for (int i2=0; i2<g_MatchColors; i2++) {
 							int rd = r-pal[i2].rgbRed;
 							int gd = g-pal[i2].rgbGreen;
 							int bd = b-pal[i2].rgbBlue;
-							float_precision dist = (rd*rd)+(gd*gd)+(bd*bd);
+							double dist = (rd*rd)+(gd*gd)+(bd*bd);
 							if (dist < mindist) {
 								mindist = dist;
 								best = i2;
@@ -884,9 +884,9 @@ ohJustSkipTheLoad:
 							b = pal[best].rgbBlue;
 						} else {
 							// not in range, so calculate a scale to move by
-							float_precision scale = maxrange / mindist;	// x% ^2
+							double scale = maxrange / mindist;	// x% ^2
 							scale = sqrt((double)scale);				// x% raw
-							float_precision move = (pal[best].rgbRed - r) * scale;
+							double move = (pal[best].rgbRed - r) * scale;
 							if (move < 0) {
 								r += (int)(move - 0.5);
 							} else {
@@ -1029,7 +1029,7 @@ bool ScalePic(int nFilter, int nPortraitMode)
 #define X_AXIS 1
 #define Y_AXIS 2
 	
-	float_precision x1,y1,x_scale,y_scale;
+	double x1,y1,x_scale,y_scale;
 	int r;
 	unsigned int thisx, thisy;
 	HGLOBAL tmpBuffer;
@@ -1037,19 +1037,19 @@ bool ScalePic(int nFilter, int nPortraitMode)
 	debug(_T("Image:  %d x %d\n"),inWidth, inHeight);
 	debug(_T("Output: %d x %d\n"),currentw, currenth);
 	
-	x1=(float_precision)(inWidth);
-	y1=(float_precision)(inHeight);
+	x1=(double)(inWidth);
+	y1=(double)(inHeight);
 	
-	x_scale=((float_precision)(currentw))/x1;
-	y_scale=((float_precision)(currenth))/y1;
+	x_scale=((double)(currentw))/x1;
+	y_scale=((double)(currenth))/y1;
 
 	debug(_T("Scale:  %f x %f\n"),x_scale,y_scale);
 	
 	if (ScaleMode == -1) {
 		ScaleMode=Y_AXIS;
 	
-		if (y1*x_scale > (float_precision)(currenth)) ScaleMode=Y_AXIS;
-		if (x1*y_scale > (float_precision)(currentw)) ScaleMode=X_AXIS;
+		if (y1*x_scale > (double)(currenth)) ScaleMode=Y_AXIS;
+		if (x1*y_scale > (double)(currentw)) ScaleMode=X_AXIS;
 		debug(_T("Decided scale (1=X, 2=Y): %d\n"),ScaleMode);
 	} else {
 		debug(_T("Using scale (1=X, 2=Y): %d\n"),ScaleMode);
@@ -1240,7 +1240,7 @@ bool ScalePic(int nFilter, int nPortraitMode)
 
 	// handle shifting
 	if (pixeloffset != 0) {
-		printf("Nudging %d pixels...\n", pixeloffset);
+		debug(_T("Nudging %d pixels...\n"), pixeloffset);
 		if (pixeloffset > 0) {
 			memmove(hBuffer2, (char*)hBuffer2+pixeloffset*3, (256*192-pixeloffset)*3);
 		} else {

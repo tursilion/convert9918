@@ -55,7 +55,7 @@ bool g_bDisplayPalette = false;		// draw palette on line
 int g_MatchColors = 15;				// number of non-paletted colors to be matched (used for B&W and greyscale)
 
 uchar pal[256][4];	// RGB0
-float_precision YUVpal[256][4];	// YCrCb0 - misleadingly called YUV for easier typing
+double YUVpal[256][4];	// YCrCb0 - misleadingly called YUV for easier typing
 unsigned char scanlinepal[192][16][4];	// RGB0
 int pixels[32][8][4];
 extern MYRGBQUAD palinit16[256], defaultpalinit16[16];
@@ -80,9 +80,9 @@ int g_MaxMultiDiff=95;			// default percentage that we allow colors to differ lu
 int g_MaxColDiff=1;				// max color shift allowed (>15 is pretty pointless - percentage of color space)
 int g_OrderedDither=0;			// whether to use the built-in ordered dither 1 or 2
 int g_MapSize=2;				// whether ordered dither uses 2x2 or 4x4 maps
-float_precision g_PercepR=0.30, g_PercepG=0.52, g_PercepB=0.18;
-float_precision g_LumaEmphasis = 1.2;		// much like the perceptual shifts, this emphasizes (or de-emphasizes if less than 1) the luma component
-float_precision g_Gamma = 1.0;
+double g_PercepR=0.30, g_PercepG=0.52, g_PercepB=0.18;
+double g_LumaEmphasis = 1.2;		// much like the perceptual shifts, this emphasizes (or de-emphasizes if less than 1) the luma component
+double g_Gamma = 1.0;
 
 extern unsigned char buf8[256*192];
 extern RGBQUAD winpal[256];
@@ -173,7 +173,7 @@ void writeint(int n, wchar_t *name) {
 	WritePrivateProfileString(_T("Convert9918"), name, buf, INIFILEPATH);
 }
 
-void writefloat(float_precision n, wchar_t *name) {
+void writefloat(double n, wchar_t *name) {
 	wchar_t buf[64];
 	int x = (int)(n*1000);
 	_swprintf(buf, _T("%d"), x);
@@ -249,11 +249,11 @@ void readint(int &n, wchar_t *key) {
 	if (x != -9941) n=x;
 }
 
-void readfloat(float_precision &n, wchar_t *key) {
+void readfloat(double &n, wchar_t *key) {
 	int x;
 	x = profileInt(_T("Convert9918"), key, -9941, INIFILEPATH);
 	if (x != -9941) {
-		n = (float_precision)x / 1000.0;
+		n = (double)x / 1000.0;
 	}
 }
 
@@ -677,7 +677,7 @@ void ConvertToHalfMulticolor(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal
 					// also skip color matches that exceed the flicker palette difference
 					uchar *pPal1=pal[(col%16<<4)|(col%16)];		// (color+itself is solid version)
 					uchar *pPal2=pal[(col/16)<<4|(col/16)];
-					float_precision lum1, lum2, diff;
+					double lum1, lum2, diff;
 					makeY(pPal1[0], pPal1[1], pPal1[2], lum1);
 					makeY(pPal2[0], pPal2[1], pPal2[2], lum2);
 					if (lum1 > lum2) {
@@ -686,7 +686,7 @@ void ConvertToHalfMulticolor(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal
 						diff = lum2 - lum1;
 					}
 					// diff should be from 0-256
-					if ((diff/256.0) > (float_precision)g_MaxMultiDiff/100.0) continue;
+					if ((diff/256.0) > (double)g_MaxMultiDiff/100.0) continue;
 				}
 
 				for (int nSubY = 0; nSubY < 4; nSubY++) {
@@ -701,8 +701,8 @@ void ConvertToHalfMulticolor(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal
 							t = pCol[2]-(pBase24[2]/Divisor);
 							nThisErr+=(int)((t*t)*(g_PercepB*100));
 						} else {
-							float_precision r1,g1,b1;
-							float_precision r2,g2,b2;
+							double r1,g1,b1;
+							double r2,g2,b2;
 
 							// get RGB
 							r1=pCol[0];
@@ -768,8 +768,8 @@ int HamPixMatch(unsigned char *pBase24) {
 			nThisErr+=(int)((t*t)*(g_PercepB*100));
 		} else {
 			int r,g,b;
-			float_precision y1,cr1,cb1;
-			float_precision y2,cr2,cb2;
+			double y1,cr1,cb1;
+			double y2,cr2,cb2;
 
 			// get RGB
 			r=pCol[0];
@@ -949,13 +949,13 @@ void ConvertToHAM4(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal) {
 			// pixels is the one we want to use.
 			// naive, but it should tell me if this concept has any merit
 			uchar palback[256][4];						// only 4 colors needed
-			float_precision yuvback[256][4];
+			double yuvback[256][4];
 
 			memcpy(palback, pal, sizeof(palback));		// backup the palette
 			memcpy(yuvback, YUVpal, sizeof(yuvback));
 
 			// calculate a best-match error for the next four pixels
-			float_precision nBestErr = 0xffffffff;
+			double nBestErr = 0xffffffff;
 			int nBestCtrl = 0;
 
 			for (int ctrlword = 0; ctrlword < 256; ctrlword++) {
@@ -996,15 +996,15 @@ void ConvertToHAM4(unsigned char *pOrig, BYTE *pDest, MYRGBQUAD *inpal) {
 				int nexty=y;
 				if (nextx>=256) { nextx=0; ++nexty; }
 				if ( nexty < 192) {
-					float_precision nCurDistance = 0.0;
+					double nCurDistance = 0.0;
 
 					for (int subx=0; subx<4; subx++) {
 						uchar *pData = pOrig + (nexty*256+nextx+subx)*3;
 						int nCol = HamPixMatch(pData);
 
-						float_precision r,g,b;
-						float_precision y,cr,cb;
-						float_precision t1, t2, t3;
+						double r,g,b;
+						double y,cr,cb;
+						double t1, t2, t3;
 
 						// get RGB
 						r=pData[0];

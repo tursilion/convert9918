@@ -27,7 +27,7 @@
 #include "TIPicViewDlg.h"
 
 extern int g_MaxMultiDiff;			// default percentage that we allow colors to differ luminence by (255=100%)
-extern float_precision g_PercepR, g_PercepG, g_PercepB;
+extern double g_PercepR, g_PercepG, g_PercepB;
 extern int g_UseColorOnly;
 extern int g_UsePerLinePalette;
 extern int g_MatchColors;				// number of non-paletted colors to be matched (used for B&W and greyscale)
@@ -38,7 +38,7 @@ extern int g_StaticColors;				// fixed popular colors in per-scanline palette F1
 extern bool g_bStaticByPopularity;		// select static colors by popularity (else use median cut - default is popularity)
 extern int cols[4096];					// work space
 extern unsigned char pal[256][4];		// RGB0
-extern float_precision YUVpal[256][4];			// YCrCb0 - misleadingly called YUV for easier typing
+extern double YUVpal[256][4];			// YCrCb0 - misleadingly called YUV for easier typing
 extern Point points[256];
 extern RGBQUAD winpal[256];
 extern unsigned char scanlinepal[192][16][4];	// RGB0
@@ -47,14 +47,14 @@ extern CWnd *pWnd;
 extern bool g_bDisplayPalette;			// draw palette on line
 extern int g_OrderedDither;
 extern int g_MapSize;
-extern float_precision g_LumaEmphasis;
-extern float_precision g_Gamma;
+extern double g_LumaEmphasis;
+extern double g_Gamma;
 
 // returns the distance squared on the YUV scale between two RGB entries
-float_precision yuvdist(float_precision r1, float_precision g1, float_precision b1, float_precision r2, float_precision g2, float_precision b2) {
-	float_precision y1,cr1,cb1;
-	float_precision y2,cr2,cb2;
-	float_precision t1,t2,t3;
+double yuvdist(double r1, double g1, double b1, double r2, double g2, double b2) {
+	double y1,cr1,cb1;
+	double y2,cr2,cb2;
+	double t1,t2,t3;
 
 	// make YCrCb
 	makeYUV(r1, g1, b1, y1, cr1, cb1);
@@ -69,9 +69,9 @@ float_precision yuvdist(float_precision r1, float_precision g1, float_precision 
 }
 // returns the distance squared against yuvpal
 // this is called from the inner loop and is pretty critical
-float_precision yuvpaldist(float_precision r, float_precision g, float_precision b, int nCol) {
-	float_precision y,cr,cb;
-	float_precision t1,t2,t3;
+double yuvpaldist(double r, double g, double b, int nCol) {
+	double y,cr,cb;
+	double t1,t2,t3;
 
 	// make YCrCb
 	makeYUV(r, g, b, y, cr, cb);
@@ -86,7 +86,7 @@ float_precision yuvpaldist(float_precision r, float_precision g, float_precision
 
 // does a YUV conversion from in (RGB) to out (YUV)
 // CHANGES out!
-void makeYUV(float_precision r, float_precision g, float_precision b, float_precision &y, float_precision &u, float_precision &v) {
+void makeYUV(double r, double g, double b, double &y, double &u, double &v) {
 	// NOTE: I'm only using this for distance tests, so I do not add the offsets. Y should be +16, and the others +128, for 0-255 ranges.
 	// also, due to error values, we often get out of range inputs, so don't assume :)
 
@@ -102,7 +102,7 @@ void makeYUV(float_precision r, float_precision g, float_precision b, float_prec
 
 // does a Y-only conversion from in (RGB) to out (Y)
 // CHANGES out!
-void makeY(float_precision r, float_precision g, float_precision b, float_precision &y) {
+void makeY(double r, double g, double b, double &y) {
 	y = 0.299*r + 0.587*g + 0.114*b;
 }
 
