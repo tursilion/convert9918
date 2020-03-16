@@ -26,19 +26,50 @@ How do I change it?
 This program messes with several of the system pointers in order to load and
 save larger than it really it. It seems to be okay to make small changes to it
 and save it again, but keep a backup and test often - sometimes it seems to 
-get corrupted.
+get corrupted. It seems better since Senior Falcon's suggestions.
 
 Only change code from line 200 onwards. For instance, you might want to change 
 the background color in the CALL SCREEN to something more appropriate for your 
 image. The CALL LINK("SHOW") does the actual display and waits for the user to 
-press Enter before returning.
+press Enter before returning. Character sets, colors, and screen are now
+restored.
 
-After a return, VDP RAM is a mess. You should always CALL CLEAR, and rather than 
-add more code here, you should chain to your next program with RUN "DSK1.xxxx" 
-(where 'xxxx' is your program).
+I still recommend that rather than add more code here, you should chain to your 
+next program with RUN "DSK1.xxxx" (where 'xxxx' is your program).
 
-The next program should always start with CALL CHARSET, otherwise all your 
-character definitions will be corrupted.
+
+How do I /really/ change it?
+----------------------------
+
+There's not too much you can do, but keep in mind if you add assembly code (and
+it doesn't crash!), that the display code uses RAM from >3000 to >3E1F for buffer
+and workspace, so you can't use that for anything permanent.
+
+Patches were not really intended for the RLE version - again, you can try them,
+but at your own risk. Advanced XB bitmap stuff is better suited to The Missing Link.
+
+A common request was to be able to change the key it waits for. In the current
+version of the code, before the CALL LINK, you can try this:
+
+CALL LOAD(-402,32)
+
+This will change it to wait for space bar. -402 is the address to change, but
+the second value is the ascii value of the character you want. (You can get it
+at the prompt with something like PRINT ASC("*"), for instance).
+
+A more advanced change might be to return on ANY key, and then detect what was
+pressed. You can do this BEFORE the CALL LINK:
+
+CALL LOAD(-402,255,0,19)
+
+then AFTER the CALL LINK, retrieve the key with this:
+
+CALL PEEK(15902,KEY)
+
+Of course, this gives you only one chance and no chance to reload if the key is wrong.
+
+If you need more advanced, you'll have to patch the assembly to call your own test function.
+More information about how it works below.
 
 
 How does it work??
@@ -171,6 +202,12 @@ demonstrating that the interpreter is working. Replace this line with your
 RUN command.
 
 To break down the assembly:
+
+(The following description is older and I don't care to document the new
+one so fully. The main change is we are nicer and backup and restore more
+than we used to, thanks to investigation by Senior Falcon. The new backup/
+restore using low RAM from >3000->3DFF, backing up VDP >0000->0BFF, and 
+>3400->37FF, and puts a workspace at >3E00).
 
 It first starts with some hard-coded equates to the the image, as well as 
 to the XB version of KSCAN.

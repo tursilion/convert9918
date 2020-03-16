@@ -1244,14 +1244,17 @@ void CTIPicViewDlg::OnButton4()
 			case 5:
 				// if it's XB, we need to patch it into the program (full size version)
 				{
-					// pattern table first
+					// pattern table first - we read two bytes there for the assumed
+                    // CPU RAM location of the image - the address is just there to ensure
+                    // that we are looking at the right place and it will be overwritten.
+                    // If changing xbtest.h, you need to manually patch these addresses.
 					unsigned char *p = 0x3fe+XBWorkBuf;
 					if ((*p!=0xcd)||(*(p+1)!=0xe6)) {
 						AfxMessageBox(_T("Internal error finding pattern table location."));
 					} else {
 						UpdateWorkBuf(pbuf, p, nOutputPSize);
 					}
-					// then color table
+					// then color table - same deal, same hand-patched verify bytes
 					p = 0x1c2e+XBWorkBuf;
 					if ((*p!=0xe5)||(*(p+1)!=0xe6)) {
 						AfxMessageBox(_T("Internal error finding color table location."));
@@ -1361,30 +1364,32 @@ void CTIPicViewDlg::OnButton4()
 
 					// relocate the assembly program pointers
 					// TIAP
-					if ((XBWorkBuf[0x34a0]!=0xcd)||(XBWorkBuf[0x34a1]!=0xe6)) {
+					if ((XBWorkBuf[0x34a6]!=0xcd)||(XBWorkBuf[0x34a7]!=0xe6)) {
 						printf("Can't find reference to TIAP\n");
 					} else {
-						XBWorkBuf[0x34a0]=nPatternTable/256;
-						XBWorkBuf[0x34a1]=nPatternTable%256;
+						XBWorkBuf[0x34a6]=nPatternTable/256;
+						XBWorkBuf[0x34a7]=nPatternTable%256;
 					}
 					// TIAC
-					if ((XBWorkBuf[0x34b0]!=0xe5)||(XBWorkBuf[0x34b1]!=0xe6)) {
+					if ((XBWorkBuf[0x34b6]!=0xe5)||(XBWorkBuf[0x34b7]!=0xe6)) {
 						printf("Can't find reference to TIAC\n");
 					} else {
-						XBWorkBuf[0x34b0]=nColorTable/256;
-						XBWorkBuf[0x34b1]=nColorTable%256;
+						XBWorkBuf[0x34b6]=nColorTable/256;
+						XBWorkBuf[0x34b7]=nColorTable%256;
 					}
 
 					// change the assembly program to use RLE decode
-					if ((XBWorkBuf[0x34ac]!=0xfe)||(XBWorkBuf[0x34ad]!=0xce)) {
+                    // LOADDIR is at >FEDA
+                    // LOADRLE is at >FEAA
+					if ((XBWorkBuf[0x34b2]!=0xfe)||(XBWorkBuf[0x34b3]!=0xda)) {
 						printf("Can't find first reference to LOADDIR\n");
 					} else {
-						XBWorkBuf[0x34ad]=0x9a;
+						XBWorkBuf[0x34b3]=0xaa;
 					}
-					if ((XBWorkBuf[0x34bc]!=0xfe)||(XBWorkBuf[0x34bd]!=0xce)) {
+					if ((XBWorkBuf[0x34c2]!=0xfe)||(XBWorkBuf[0x34c3]!=0xda)) {
 						printf("Can't find second reference to LOADDIR\n");
 					} else {
-						XBWorkBuf[0x34bd]=0x9a;
+						XBWorkBuf[0x34c3]=0xaa;
 					}
 
 					// move the executable block down into place
@@ -1392,6 +1397,7 @@ void CTIPicViewDlg::OnButton4()
 					// so that we don't need to reformat the records, thus
 					// we can just use a block move. The /254*2 adds two bytes of
 					// offset for each record to help alignment.
+                    // (Note: 0x3380 is the start of the /record/, not the code start)
 					memmove(&XBWorkBuf[0x3380-nNewXBOffset-(nNewXBOffset/254*2)], &XBWorkBuf[0x3380], SIZE_OF_XBTEST-0x3380);
 
 					// figure out the new record count
