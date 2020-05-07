@@ -610,8 +610,21 @@ void CTIPicViewDlg::OnButton4()
 		return;
 	}
 
-	// Type:		 1							2						3			4				5				6						7			8                       9                                    10
-	CString csFmt = _T("TIFILES Format Header|*.*|V9T9 Format Header|*.*|Raw Files|*.*|RLE Files|*.*|TI XB Program|*.*|TI XB RLE Program|*.*|MSX SC2|*.SC2|ColecoVision Cart|*.ROM|ColecoVision RLE Cart (Broken)|*.ROM|PNG file (PC)|*.PNG||");
+    enum FILETYPES {
+	    ftTIFILES = 1,
+	    ftV9T9,
+	    ftRaw,
+	    ftRLE,
+	    ftTIXB,
+        ftTIXBRLE,
+	    ftMSXSC2,
+        ftCVPaint,
+	    ftColecoROM,
+	    ftColecoROMRLE,
+	    ftPNG
+    };
+
+	CString csFmt = _T("TIFILES Format Header|*.*|V9T9 Format Header|*.*|Raw Files|*.*|RLE Files|*.*|TI XB Program|*.*|TI XB RLE Program|*.*|MSX SC2|*.SC2|Coleco CVPaint|*.pc|ColecoVision Cart|*.ROM|ColecoVision RLE Cart (Broken)|*.ROM|PNG file (PC)|*.PNG||");
 	CFileDialog dlg(false, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, csFmt);
 
 	// Save image
@@ -630,7 +643,7 @@ void CTIPicViewDlg::OnButton4()
 		if (cmdFileOut != NULL) {
 			outfile = cmdFileOut;
 		}
-		if (dlg.m_pOFN->nFilterIndex==2) {
+		if (dlg.m_pOFN->nFilterIndex==ftV9T9) {
 			rawfile=dlg.GetFileName();
 			if (rawfile.GetLength() > 6) {
 				printf("Truncating outfile filename for V9T9\n");
@@ -646,7 +659,26 @@ void CTIPicViewDlg::OnButton4()
 		}
 		
 		// check for existance
-		if (dlg.m_pOFN->nFilterIndex < 4) {
+        bool checkTI = false;
+        switch (dlg.m_pOFN->nFilterIndex) {
+            case ftTIFILES:
+            case ftV9T9:
+            case ftRaw:
+            case ftRLE:
+                checkTI = true;
+                break;
+
+		    case ftTIXB:
+		    case ftTIXBRLE:
+		    case ftMSXSC2:
+		    case ftColecoROM:
+		    case ftColecoROMRLE:
+		    case ftPNG:
+                checkTI = false;
+                break;
+        }
+
+		if (checkTI) {
 			cs=outfile;
 			cs+=".TIAP";
 			hFile=CreateFile(cs, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -698,24 +730,24 @@ void CTIPicViewDlg::OnButton4()
 		// we now get to process buf8. we have to increment all color indexes by 1 to save
 		switch (dlg.m_pOFN->nFilterIndex) {
 			default:
-			case 1:	// TIFILES
-				dlg.m_pOFN->nFilterIndex=1; // just to be sure (because of the default case)
+			case ftTIFILES:	// TIFILES
+				dlg.m_pOFN->nFilterIndex=ftTIFILES; // just to be sure (because of the default case)
 				debug(_T("Writing TIFILES headers.\n"));
 				break;
 
-			case 2:	// V9T9
+			case ftV9T9:	// V9T9
 				debug(_T("Writing V9T9 headers.\n"));
 				break;
 
-			case 3:	// No header
+			case ftRaw:	// No header
 				debug(_T("No headers will be written.\n"));
 				break;
 
-			case 4: // RLE
+			case ftRLE: // RLE
 				debug(_T("RLE files with no header will be written\n"));
 				break;
 
-			case 5: // XB Program
+			case ftTIXB: // XB Program
 				if (g_UseHalfMulticolor) {
 					AfxMessageBox(_T("Half-multicolor not supported with Extended BASIC."));
 					return ;
@@ -735,7 +767,7 @@ void CTIPicViewDlg::OnButton4()
 				debug(_T("XB Program image with TIFILES header will be written\n"));
 				break;
 
-			case 6: // XB RLE Program
+			case ftTIXBRLE: // XB RLE Program
 				if (g_UseHalfMulticolor) {
 					AfxMessageBox(_T("Half-multicolor not supported with Extended BASIC."));
 					return ;
@@ -755,7 +787,7 @@ void CTIPicViewDlg::OnButton4()
 				debug(_T("XB RLE Program image with TIFILES header will be written\n"));
 				break;
 
-			case 7: // MSX SC2
+			case ftMSXSC2: // MSX SC2
 				if (g_UseHalfMulticolor) {
 					AfxMessageBox(_T("Half-multicolor not supported with MSX dump."));
 					return ;
@@ -775,7 +807,11 @@ void CTIPicViewDlg::OnButton4()
 				debug(_T("MSX *.SC2 type image will be written\n"));
 				break;
 
-			case 8:	// ColecoVision cartridge
+			case ftCVPaint:	// No header
+				debug(_T("No headers will be written.\n"));
+				break;
+
+            case ftColecoROM:	// ColecoVision cartridge
 				if (g_UseHalfMulticolor) {
 					AfxMessageBox(_T("Half-multicolor not supported with ColecoVision ROM."));
 					return ;
@@ -795,7 +831,7 @@ void CTIPicViewDlg::OnButton4()
 				debug(_T("ColecoVision cartridge will be written\n"));
 				break;
 
-			case 9:	// ColecoVision RLE cartridge
+			case ftColecoROMRLE:	// ColecoVision RLE cartridge
 				if (g_UseHalfMulticolor) {
 					AfxMessageBox(_T("Half-multicolor not supported with ColecoVision ROM."));
 					return ;
@@ -815,7 +851,7 @@ void CTIPicViewDlg::OnButton4()
 				debug(_T("ColecoVision RLE cartridge will be written\n"));
 				break;
 
-			case 10:	// PNG file for PC
+			case ftPNG:	// PNG file for PC
 				// this might work, right now I don't want to figure out how ;)
 				if (g_UsePerLinePalette) {
 					AfxMessageBox(_T("Per-Line paletted images not currently supported with PNG export."));
@@ -826,66 +862,100 @@ void CTIPicViewDlg::OnButton4()
 		}
 
 		cs=outfile;
-		if (dlg.m_pOFN->nFilterIndex < 5) {
-			cs+="_P";
-			cs.MakeUpper();
-			CString csRealName = cs;
-			if (csRealName.Right(2).MakeUpper() == _T("_P")) {
-				csRealName = csRealName.Left(csRealName.GetLength()-2) + _T(".TIAP");
-			}
-			_wfopen_s(&fP, csRealName, _T("wb"));
-			if (NULL == fP) {
-				AfxMessageBox(_T("Failed to open _P file"));
-				return;
-			}
-		} else {
-			switch (dlg.m_pOFN->nFilterIndex) {
-			case 8:
-			case 9:
-				// colecovision
-				cs+=_T(".rom");
+		switch (dlg.m_pOFN->nFilterIndex) {
+	        case ftTIFILES:
+	        case ftV9T9:
+	        case ftRaw:
+	        case ftRLE:
+			    cs+="_P";
+			    cs.MakeUpper();
+                {
+			        CString csRealName = cs;
+			        if (csRealName.Right(2).MakeUpper() == _T("_P")) {
+				        csRealName = csRealName.Left(csRealName.GetLength()-2) + _T(".TIAP");
+			        }
+			        _wfopen_s(&fP, csRealName, _T("wb"));
+                }
+			    if (NULL == fP) {
+				    AfxMessageBox(_T("Failed to open _P file"));
+				    return;
+			    }
+                break;
+
+	        case ftTIXB:
+	        case ftTIXBRLE:
+	        case ftMSXSC2:
+                // nothing for programs here?
+                break;
+
+            case ftCVPaint:
+                // just a single output file for Coleco CVPaint
+				cs+=_T(".pc");
+			    _wfopen_s(&fP, cs, _T("wb"));
+			    if (NULL == fP) {
+				    AfxMessageBox(_T("Failed to open output file"));
+				    return;
+			    }
 				break;
 
-			case 10:
+	        case ftColecoROM:
+	        case ftColecoROMRLE:
+				// colecovision
+				cs+=_T(".rom");
+			    _wfopen_s(&fP, cs, _T("wb"));
+			    if (NULL == fP) {
+				    AfxMessageBox(_T("Failed to open output file"));
+				    return;
+			    }
+				break;
+
+            case ftPNG:
 				// PC PNG
 				cs+=_T(".png");
-			}
-			_wfopen_s(&fP, cs, _T("wb"));
-			if (NULL == fP) {
-				AfxMessageBox(_T("Failed to open output file"));
-				return;
-			}
+			    _wfopen_s(&fP, cs, _T("wb"));
+			    if (NULL == fP) {
+				    AfxMessageBox(_T("Failed to open output file"));
+				    return;
+			    }
+                break;
+
 		}
 
 		// Is this a bug for TIFILES headers? The RLE files write the wrong filesize??
 		// prepare headers
 		switch (dlg.m_pOFN->nFilterIndex) {
-			case 1:	// TIFILES
+			case ftTIFILES:	// TIFILES
 				DoTIFILES(fP, nOutputPSize);
 				break;
 
-			case 2:	// V9T9
+			case ftV9T9:	// V9T9
 				DoV9T9(fP,rawfile+_T("_P"), nOutputPSize);
 				break;
 
-			case 5:	// XB
-			case 6: // XB w RLE
+            case ftRaw:
+            case ftRLE:
+                // no headers
+                break;
+
+			case ftTIXB:	// XB
+			case ftTIXBRLE: // XB w RLE
 				// get a clean copy to work on
 				memcpy(XBWorkBuf, XBTEST, SIZE_OF_XBTEST);
 				break;
 
-			case 7:	// MSX
+			case ftMSXSC2:	// MSX
 				// there's a fixed (for us) 7 byte header to write
 				// TODO: no good for multicolor
 				fwrite("\xfe\x00\x00\x00\x38\x00\x00", 1, 7, fP);	// FE, load >0000, End >3800, Boot >0000 (disabled)
 				break;
 
-			case 8:	// ColecoVision
-			case 9:	// ColecoVision with RLE
+            case ftCVPaint:
+			case ftColecoROM:	// ColecoVision
+			case ftColecoROMRLE:// ColecoVision with RLE
 				// no preparation needed here
 				break;
 
-			case 10:	// PNG file
+			case ftPNG:	// PNG file
 				// we don't need the conversion below, so just do the work and return here
 				if (NULL != fP) {
 					fclose(fP);
@@ -904,7 +974,27 @@ void CTIPicViewDlg::OnButton4()
 		}
 
 		// only need 1 file for the demo outputs, otherwise we open the C and maybe M file here
-		if ((dlg.m_pOFN->nFilterIndex < 5) && (nOutputCSize > 0)) {
+        bool multiFile = false;
+        switch (dlg.m_pOFN->nFilterIndex) {
+            case ftTIFILES:
+            case ftV9T9:
+            case ftRaw:
+            case ftRLE:
+                multiFile = true;
+                break;
+
+		    case ftTIXB:
+		    case ftTIXBRLE:
+		    case ftMSXSC2:
+            case ftCVPaint:
+		    case ftColecoROM:
+		    case ftColecoROMRLE:
+		    case ftPNG:
+                multiFile = false;
+                break;
+        }
+
+		if ((multiFile) && (nOutputCSize > 0)) {
 			if ((g_UseMulticolorOnly == 0) || (g_UseHalfMulticolor == 1)) {
 				cs=outfile;
 				cs+="_C";
@@ -920,14 +1010,26 @@ void CTIPicViewDlg::OnButton4()
 					return;
 				}
 
+                // color file headers
 				switch (dlg.m_pOFN->nFilterIndex) {
-					case 1:	// TIFILES
+					case ftTIFILES:	// TIFILES
 						DoTIFILES(fC, nOutputCSize);
 						break;
 
-					case 2:	// V9T9
+					case ftV9T9:	// V9T9
 						DoV9T9(fC,rawfile+"_C", nOutputCSize);
 						break;
+
+                    case ftRaw:
+                    case ftRLE:
+		            case ftTIXB:
+		            case ftTIXBRLE:
+		            case ftMSXSC2:
+                    case ftCVPaint:
+		            case ftColecoROM:
+		            case ftColecoROMRLE:
+		            case ftPNG:
+                        break;
 				}
 
 				if (!g_UseMulticolorOnly) {
@@ -947,14 +1049,26 @@ void CTIPicViewDlg::OnButton4()
 							return;
 						}
 
+                        // multi file headers
 						switch (dlg.m_pOFN->nFilterIndex) {
-							case 1:	// TIFILES
+							case ftTIFILES:	// TIFILES
 								DoTIFILES(fM, nOutputMSize);
 								break;
 
-							case 2:	// V9T9
+							case ftV9T9:	// V9T9
 								DoV9T9(fM,rawfile+"_M", nOutputMSize);
 								break;
+
+                            case ftRaw:
+                            case ftRLE:
+		                    case ftTIXB:
+		                    case ftTIXBRLE:
+		                    case ftMSXSC2:
+                            case ftCVPaint:
+		                    case ftColecoROM:
+		                    case ftColecoROMRLE:
+		                    case ftPNG:
+                                break;
 						}
 					}
 				}
@@ -1194,16 +1308,16 @@ void CTIPicViewDlg::OnButton4()
 		}
 		// write out data
 		switch (dlg.m_pOFN->nFilterIndex) { 
-			case 1: // tifiles
-			case 2: // v9t9
-			case 3: // raw
+			case ftTIFILES: // tifiles
+			case ftV9T9: // v9t9
+			case ftRaw: // raw
 				// not RLE - dump the raw data
 				fwrite(pbuf, 1, nOutputPSize, fP);				// always at least a pattern table
 				if (fC) fwrite(cbuf, 1, nOutputCSize, fC);
 				if (fM) fwrite(mbuf, 1, nOutputMSize, fM);
 				break;
 
-			case 4:
+			case ftRLE:
 				// it IS RLE, do a simple compression
 				// high bit set - run length, else raw data
 				{	
@@ -1241,7 +1355,7 @@ void CTIPicViewDlg::OnButton4()
 				}
 				break;
 
-			case 5:
+			case ftTIXB:
 				// if it's XB, we need to patch it into the program (full size version)
 				{
 					// pattern table first - we read two bytes there for the assumed
@@ -1273,7 +1387,7 @@ void CTIPicViewDlg::OnButton4()
 				}
 				break;
 
-			case 6:
+			case ftTIXBRLE:
 				// if it's XB, we need to patch it into the program (RLE version)
 				{
 					// it IS RLE, do a simple compression
@@ -1415,7 +1529,7 @@ void CTIPicViewDlg::OnButton4()
 				}
 				break;
 
-			case 7:	// MSX SC2
+			case ftMSXSC2:	// MSX SC2
 				// MSX format:
 				//	 
 				// 7 byte header: (per http://www.msx.org/wiki/MSX-BASIC_file_formats)
@@ -1463,8 +1577,17 @@ void CTIPicViewDlg::OnButton4()
 				}
 				break;
 
-			case 8:	// colecovision cartridge
-			case 9:	// colecovision RLE cartridge  (not working for some reason...)
+            case ftCVPaint:
+				// not RLE - dump the raw data - but all to one file
+                // first P, then C.
+                // as our own extension, we'll add the M data after the C data
+				fwrite(pbuf, 1, nOutputPSize, fP);				// always at least a pattern table
+				if (nOutputCSize>0) fwrite(cbuf, 1, nOutputCSize, fP);
+				if (nOutputMSize>0) fwrite(mbuf, 1, nOutputMSize, fP);
+				break;
+
+			case ftColecoROM:	// colecovision cartridge
+			case ftColecoROMRLE:// colecovision RLE cartridge  (not working for some reason...)
 				{
 					unsigned char buf[32*1024];		// more than enough
 					int nSize;						// actual size
@@ -1506,7 +1629,7 @@ void CTIPicViewDlg::OnButton4()
 
 					// next, set the RLE flag for the embedded code
 					buf[0xff]=0;		// not RLE
-					if (dlg.m_pOFN->nFilterIndex == 9) {
+					if (dlg.m_pOFN->nFilterIndex == ftColecoROMRLE) {
 						buf[0xff]=1;	// is RLE
 						pRLEP = RLEEncode(pbuf, &sizeP, nOutputPSize);
 						pRLEC = RLEEncode(cbuf, &sizeC, nOutputCSize);
@@ -1538,6 +1661,9 @@ void CTIPicViewDlg::OnButton4()
 				}
 				break;
 
+            case ftPNG:
+                // never hit
+                break;
 		}
 
 		if (NULL != fC) {
