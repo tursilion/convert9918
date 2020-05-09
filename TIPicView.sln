@@ -1,9 +1,9 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.1082
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Convert9918", "TIPicView.vcxproj", "{619C1A3E-1743-4ECA-A8D6-2FAFB1A1DF01}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FixPalette", "FixPalette\FixPalette.vcxproj", "{8E43B2EE-508F-4F4C-8F4E-5AD48965BD40}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,14 +21,11 @@ Global
 		{619C1A3E-1743-4ECA-A8D6-2FAFB1A1DF01}.Release|Win32.Build.0 = Release|Win32
 		{619C1A3E-1743-4ECA-A8D6-2FAFB1A1DF01}.Release|x64.ActiveCfg = Release|x64
 		{619C1A3E-1743-4ECA-A8D6-2FAFB1A1DF01}.Release|x64.Build.0 = Release|x64
-		{8E43B2EE-508F-4F4C-8F4E-5AD48965BD40}.Debug|Win32.ActiveCfg = Debug|Win32
-		{8E43B2EE-508F-4F4C-8F4E-5AD48965BD40}.Debug|Win32.Build.0 = Debug|Win32
-		{8E43B2EE-508F-4F4C-8F4E-5AD48965BD40}.Debug|x64.ActiveCfg = Debug|Win32
-		{8E43B2EE-508F-4F4C-8F4E-5AD48965BD40}.Release|Win32.ActiveCfg = Release|Win32
-		{8E43B2EE-508F-4F4C-8F4E-5AD48965BD40}.Release|Win32.Build.0 = Release|Win32
-		{8E43B2EE-508F-4F4C-8F4E-5AD48965BD40}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D716C5CC-5EB6-47CC-8775-73C049385BDA}
 	EndGlobalSection
 EndGlobal

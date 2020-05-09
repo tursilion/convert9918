@@ -459,7 +459,7 @@ void CTIPicViewDlg::OnRnd()
 	}
 	csPath=dlg.GetPathName();
 
-	LaunchMain(2, (char*)csPath.GetString());
+	LaunchMain(2, csPath.GetString());
 
 }
 
