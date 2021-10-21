@@ -1130,6 +1130,18 @@ void CTIPicViewDlg::OnButton4()
 							}
 						}
 
+						// special case for color only, which always needs both
+						if (g_UseColorOnly) {
+							if (outpat == 0x00) {
+								// make both colors background
+								fg=bg;
+							} else if (outpat == 0xff) {
+								// doesn't happen, but just in case
+								bg=fg;
+							}
+							outpat = 0xf0;
+						}
+
 						// write pattern table
 						pbuf[nOffset]=outpat;
 						// remap white and grey in color table

@@ -504,7 +504,7 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 			// start searching for the best match
 			int fgmax;
 			if (g_UseColorOnly) {
-				fgmax = 1;	// no searching foreground
+				fgmax = 15;	// search foreground and background as normal
 			} else if (g_MatchColors == 2) {
 				fgmax = 1;	// only monochrome
 			} else {
@@ -512,7 +512,9 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 			}
 			for (int fg=0; fg<fgmax; fg++) {							// foreground color
 				// happens 15 times
-				for (int bg=fg+1; bg<g_MatchColors; bg++) {						// background color
+				int bgstart = fg+1;
+				if (g_UseColorOnly) bgstart = 0;	// same color for both is legal in this case
+				for (int bg=bgstart; bg<g_MatchColors; bg++) {				// background color
 					// happens 120 times (at most)
 
 #ifdef QUANTIZE_FLICKER
@@ -539,8 +541,9 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 					int patstart = 0;
 					int patend = 256;
 					if (g_UseColorOnly) {
-						// only legal pattern will be 0x00, foreground won't matter
-						patend = 1;
+						// only legal pattern will be 0xf0
+						patstart = 0xf0;
+						patend = 0xf1;
 					}
 					for (int pat=patstart; pat<patend; pat++) {
 						// happens 30,705 times
@@ -729,9 +732,21 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 				if (g_bDisplayPalette) {
 					char paltmp[16];
 					// draw the palette at the end so we can see it
-					for (int idx=0; idx<15; idx++) {
-						paltmp[idx] = idx;
-					}
+                    if (!g_UsePerLinePalette) {
+                        // if we are stuck with the stock palette, zero out the colors we didn't use
+                        // slows us down a tiny bit...
+                        memset(paltmp, 1, sizeof(paltmp));  // 1 is black
+                        for (int idx=0; idx<256; ++idx) {
+                            int zz = *(p8Bit+(row*256)+idx);
+                            paltmp[zz] = zz;
+                        }
+                    } else {
+                        // draw the whole palette as defined
+					    for (int idx=0; idx<15; idx++) {
+						    paltmp[idx] = idx;
+					    }
+                    }
+
 					IS40_StretchDraw8Bit(*pCDC, (BYTE*)paltmp, 15, 1, 16, winpal, DPIFIX(XOFFSET+256*2), DPIFIX(row*2), DPIFIX(15*2), DPIFIX(2));
 				}
 				pWnd->ReleaseDC(pCDC);

@@ -21,8 +21,6 @@
 #include <cmath>
 #include "median_cut.h"
 
-#pragma pack(1)
-
 #include "TIPicView.h"
 #include "TIPicViewDlg.h"
 

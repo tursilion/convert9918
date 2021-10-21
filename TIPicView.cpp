@@ -16,8 +16,6 @@
 #include <cmath>
 #include "median_cut.h"
 
-#pragma pack(1)
-
 #include "TIPicView.h"
 #include "TIPicViewDlg.h"
 
@@ -512,7 +510,7 @@ BOOL CTIPicViewApp::InitInstance()
 	m_pMainWnd = &dlg;
 
 	// backup palinit16 before we load settings
-	memcpy(defaultpalinit16, palinit16, sizeof(RGBQUAD)*16);
+	memcpy(defaultpalinit16, palinit16, sizeof(MYRGBQUAD)*16);
 
 	// load settings (IF there is an INI)
 	loadSettings();

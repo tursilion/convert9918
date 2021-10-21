@@ -25,6 +25,8 @@ typedef char schar;
 
 #define DPIFIX(xx) MulDiv((xx), dpi, 96)
 
+#pragma pack(push)
+#pragma pack(1)
 typedef struct tagMYRGBQUAD {
 	// mine is RGB instead of BGR
         BYTE    rgbRed;
@@ -32,6 +34,7 @@ typedef struct tagMYRGBQUAD {
         BYTE    rgbBlue;
         BYTE    rgbReserved;
 } MYRGBQUAD;
+#pragma pack(pop)
 
 // change between float or double here
 // for all that effort, though, float is NOT faster than double

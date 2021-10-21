@@ -183,7 +183,7 @@ file for editting on the PC. If you reload the editted file
 (without changing the palette) and no new pixel clashes are
 introduced, it will convert exactly back into TMS9918A mode.
 
--A dropdown now select the conversion mode. There are eight modes:
+-A dropdown now select the conversion mode. There are nine modes:
 
 	Bitmap 9918A - the default bitmap (M3) graphics mode. This
 	writes a 6k Pattern table (.TIAP) and a 6k Color table (.TIAC).
@@ -223,6 +223,13 @@ introduced, it will convert exactly back into TMS9918A mode.
 	description below for setup details. This writes a 6144 bytes
 	Pattern table (TIAP), a 6144 byte Color table (TIAC), and a
 	2048 byte Multicolor mode Pattern table (TIAM).
+	
+	Bitmap color only 9918A - this defines a normal bitmap mode,
+	except that the pattern table is defined solely of 0xF0 bytes,
+	and only the color table is presented. This offers an effective
+	resolution of 64x192 with just 6k of image data. Note that save
+	will still save the _P file just for convenience, but it should
+	contain only 0xF0 bytes.
 
 	Paletted Bitmap F18A - This defines a 15-color palette that
 	matches the image, and reduces it to that palette. TIAP and
