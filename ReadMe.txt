@@ -191,10 +191,9 @@ introduced, it will convert exactly back into TMS9918A mode.
 	>00 to >FF bytes.
 
 	Greyscale Bitmap 9918A - this is displayed exactly the same
-	way as regular bitmap, but will map only to black, white and
-	grey, no color will be added to the image. If you enable
-	PERC and adjust the RGB values, you can tune the levels of the
-	conversion to greyscale.
+	way as regular bitmap, but assumes that you are viewing on a
+	black and white display (or a color display with the saturation
+	turned all the way down).
 
 	B&W Bitmap 9918A - this is a bitmap mode screen where all colors
 	are expected to be initialized to 0x1F (black on white). The
