@@ -57,6 +57,7 @@ extern double g_LumaEmphasis;
 extern double g_Gamma;
 extern int g_Perceptual;
 extern int g_UsePalette;
+extern int g_GreyPalette;
 extern int g_UseHalfMulticolor;
 extern int g_MaxMultiDiff;
 extern int g_MaxColDiff;
@@ -755,7 +756,7 @@ void maincode(int mode, CString pFile, double dark)
 ohJustSkipTheLoad:
 
 		// if needed, convert to greyscale (using the default formula)
-		if (g_MatchColors < 4) {
+		if ((g_MatchColors < 4)||(g_GreyPalette)) {
 			unsigned char *pBuf = (unsigned char*)hBuffer;
 			for (unsigned int idx=0; idx<inWidth*inHeight*3; idx+=3) {
 				int r,g,b,x;
@@ -801,6 +802,19 @@ ohJustSkipTheLoad:
 		// scale the image (this is okay for TI Artist - nop!)
 		// Color reduce the image to the TI palette (this part does the most damage ;) )
 		memcpy(pal, palinit16, sizeof(pal));
+
+		// and if the palette needs to be grey... make it grey
+		if (g_GreyPalette) {
+			printf("Setting palette for black and white display...\n");
+			for (int idx=0; idx<256; ++idx) {
+				int x = (int)(pal[idx].rgbBlue*0.0722 + pal[idx].rgbGreen*0.7152 + pal[idx].rgbRed*0.2126);
+				if (x > 255) x = 255;
+				pal[idx].rgbBlue = x;
+				pal[idx].rgbGreen = x;
+				pal[idx].rgbRed = x;
+			}
+		}
+
 		for (int idx=0; idx<256; idx++) {
 			// reorder for the windows draw
 			winpal[idx].rgbBlue=pal[idx].rgbBlue;
@@ -840,8 +854,8 @@ ohJustSkipTheLoad:
 				}
 			}
 
-			// apply gamma
-			if ((g_Gamma != 1.0)&&(g_Gamma != 0.0)) {
+			// apply gamma - watch float conversion
+			if (((int)(g_Gamma*100) != 100)&&(g_Gamma != 0.0)) {
 				// http://www.dfstudios.co.uk/articles/programming/image-programming-algorithms/image-processing-algorithms-part-6-gamma-correction/
 				double correct = 1/g_Gamma;
 				unsigned char *pWork = (unsigned char*)hBuffer2;
@@ -876,6 +890,8 @@ ohJustSkipTheLoad:
 								best = i2;
 							}
 						}
+#if 0
+						// old version - % is percent of entire color space
 						// we have a distance and a best color
 						if (mindist <= maxrange) {
 							// it's in range, just directly map it
@@ -905,6 +921,29 @@ ohJustSkipTheLoad:
 								b += (int)(move + 0.5);
 							}
 						}
+#else
+						// new version - percent is percentage of the distance to new color
+						double scale = g_MaxColDiff / 100.0;
+						double move = (pal[best].rgbRed - r) * scale;
+						if (move < 0) {
+							r += (int)(move - 0.5);
+						} else {
+							r += (int)(move + 0.5);
+						}
+						move = (pal[best].rgbGreen - g) * scale;
+						if (move < 0) {
+							g += (int)(move - 0.5);
+						} else {
+							g += (int)(move + 0.5);
+						}
+						move = (pal[best].rgbBlue - b) * scale;
+						if (move < 0) {
+							b += (int)(move - 0.5);
+						} else {
+							b += (int)(move + 0.5);
+						}
+
+#endif
 						*(pWork) = r;
 						*(pWork+1) = g;
 						*(pWork+2) = b;
@@ -1088,6 +1127,12 @@ bool ScalePic(int nFilter, int nPortraitMode)
 	finalW=(int)(x1);
 	finalH=(int)(y1);
 
+	if (nFilter == 5) {
+		// no scale
+		debug(_T("But, no scale is set, so never mind...\n"));
+		finalW = inWidth;
+		finalH = inHeight;
+	}
 	debug(_T("Output size: %d x %d\n"), finalW, finalH);
 
 	switch (nFilter) {
@@ -1125,6 +1170,12 @@ bool ScalePic(int nFilter, int nPortraitMode)
 				C2PassScale <CBilinearFilter> ScaleEngine;
 				tmpBuffer=ScaleEngine.AllocAndScale((unsigned char*)hBuffer, inWidth, inHeight, finalW, finalH);
 			}
+			break;
+
+		case 5:	// none
+			// do nothing
+			tmpBuffer = (unsigned char*)malloc(finalW*finalH*3);
+			memcpy(tmpBuffer, (unsigned char*)hBuffer, finalW*finalH*3);
 			break;
 	}
 
@@ -1205,6 +1256,7 @@ bool ScalePic(int nFilter, int nPortraitMode)
 		}
 		if (x >= 0) {
 			// we need to move each row manually!
+			// this fixes the stride of each line as well as moving if necessary
 			p1=(unsigned char*)tmpBuffer;
 			p2=p1+x*3;
 			for (unsigned int y=0; y<finalH; y++) {

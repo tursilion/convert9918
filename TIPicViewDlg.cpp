@@ -30,6 +30,7 @@ extern int g_MaxMultiDiff;
 extern int g_MaxColDiff;
 extern int g_UsePerLinePalette;
 extern int g_UsePalette;
+extern int g_GreyPalette;
 extern bool g_bDisplayPalette;
 extern int g_StaticColors;
 extern int g_MatchColors;
@@ -1841,6 +1842,7 @@ void CTIPicViewDlg::OnCbnSelchangeCombo1()
 		g_UseMulticolorOnly = 0;
 		g_UsePerLinePalette = 0;
 		g_UsePalette = 0;
+		g_GreyPalette = 0;
 		g_MatchColors = 15;
 		DisableItem(IDC_MAXDIFF);
 		DisableItem(IDC_STATICCNT);
@@ -1851,13 +1853,14 @@ void CTIPicViewDlg::OnCbnSelchangeCombo1()
 		nOutputMSize=0;
 		break;
 
-	case MODE_GREY_BITMAP:	// greyscale bitmap
+	case MODE_GREY_BITMAP:	// greyscale bitmap - this assumes a black and white monitor or saturation turned off
 		g_UseColorOnly = 0;
 		g_UseHalfMulticolor = 0;
 		g_UseMulticolorOnly = 0;
 		g_UsePerLinePalette = 0;
 		g_UsePalette = 0;
-		g_MatchColors = 3;	// white, black and grey
+		g_GreyPalette = 1;
+		g_MatchColors = 15;
 		DisableItem(IDC_MAXDIFF);
 		DisableItem(IDC_STATICCNT);
 		DisableItem(IDC_RADIO1);
@@ -1873,6 +1876,7 @@ void CTIPicViewDlg::OnCbnSelchangeCombo1()
 		g_UseMulticolorOnly = 0;
 		g_UsePerLinePalette = 0;
 		g_UsePalette = 0;
+		g_GreyPalette = 0;
 		g_MatchColors = 2;	// white and black only
 		DisableItem(IDC_MAXDIFF);
 		DisableItem(IDC_STATICCNT);
@@ -1889,6 +1893,7 @@ void CTIPicViewDlg::OnCbnSelchangeCombo1()
 		g_UseMulticolorOnly = 1;
 		g_UsePerLinePalette = 0;
 		g_UsePalette = 0;
+		g_GreyPalette = 0;
 		g_MatchColors = 15;
 		DisableItem(IDC_EDIT1);
 		DisableItem(IDC_EDIT2);
@@ -1911,6 +1916,7 @@ void CTIPicViewDlg::OnCbnSelchangeCombo1()
 		g_UseMulticolorOnly = 1;
 		g_UsePerLinePalette = 0;
 		g_UsePalette = 0;
+		g_GreyPalette = 0;
 		g_MatchColors = 15;
 		DisableItem(IDC_EDIT1);
 		DisableItem(IDC_EDIT2);
@@ -1933,6 +1939,7 @@ void CTIPicViewDlg::OnCbnSelchangeCombo1()
 		g_UseMulticolorOnly = 0;
 		g_UsePerLinePalette = 0;
 		g_UsePalette = 0;
+		g_GreyPalette = 0;
 		g_MatchColors = 15;
 		DisableItem(IDC_COLDIFF);
 		DisableItem(IDC_STATICCNT);
@@ -1949,6 +1956,7 @@ void CTIPicViewDlg::OnCbnSelchangeCombo1()
 		g_UseMulticolorOnly = 0;
 		g_UsePerLinePalette = 0;
 		g_UsePalette = 0;
+		g_GreyPalette = 0;
 		g_MatchColors = 15;
 		DisableItem(IDC_MAXDIFF);
 		DisableItem(IDC_STATICCNT);
@@ -1965,6 +1973,7 @@ void CTIPicViewDlg::OnCbnSelchangeCombo1()
 		g_UseMulticolorOnly = 0;
 		g_UsePerLinePalette = 0;
 		g_UsePalette = 1;
+		g_GreyPalette = 0;
 		g_MatchColors = 15;		// not used with palette
 		DisableItem(IDC_COLDIFF);
 		DisableItem(IDC_MAXDIFF);
@@ -1980,6 +1989,7 @@ void CTIPicViewDlg::OnCbnSelchangeCombo1()
 		g_UseMulticolorOnly = 0;
 		g_UsePerLinePalette = 1;
 		g_UsePalette = 1;
+		g_GreyPalette = 0;
 		g_MatchColors = 15;				// not used with palette
 		DisableItem(IDC_COLDIFF);
 		DisableItem(IDC_MAXDIFF);

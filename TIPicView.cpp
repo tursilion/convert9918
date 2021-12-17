@@ -46,6 +46,7 @@ int g_UseColorOnly = 0;
 // really nasty - separate 16-color palette per scanline
 int g_UsePerLinePalette = 0;
 int g_UsePalette = 0;				// single F18A palette over whole image
+int g_GreyPalette = 0;				// assume palette is grey scale
 int g_StaticColors = 0;				// fixed popular colors in per-scanline palette F18 mode (0-15 - note that 15 allows creation of static palette images)
 bool g_bStaticByPopularity = false;	// select static colors by popularity (else use median cut - default is popularity)
 									// popularity tends to preserve more detail - but, make it an option anyway
