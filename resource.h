@@ -15,6 +15,7 @@
 #define IDC_BUTTON5                     1003
 #define IDC_CHECK1                      1004
 #define IDC_CHECK2                      1005
+#define IDC_CHKPOWERPAINT               1005
 #define IDC_BUTTON4                     1006
 #define IDC_PERCEPT                     1007
 #define IDC_CHECK3                      1008

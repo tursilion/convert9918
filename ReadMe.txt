@@ -131,7 +131,7 @@ are supported. Half-Multicolor is not at this time.
 you enter has .TIAP and .TIAC (and .TIAM if appropriate) 
 appended to it, respectively.
 
-Six file types are available:
+These file types are available:
 
 TIFILES - this is useful for transfer to a real TI, or for
 use with Classic99. This header is 128 bytes.
@@ -172,6 +172,19 @@ MSX Basic you can view the image with this short program:
 	20 BLOAD "FILENAME.SC2",S
 	30 GOTO 30
 Only Bitmap 9918A modes are supported.
+
+CVPaint - this is a ColecoVision format with the pattern table
+first then the color table, at 6k each with the SIT expected to
+be initialized as a standard repeating 0x00-0xff bytes.
+
+CVPowerPaint - this is the Adam PowerPaint 10k format, which
+is similar to CVPaint, however with a reduced screen size. The
+two rightmost columns and bottom four rows are not included in
+the output data (however, empty data for the columns IS saved.)
+5k of pattern data is first, followed by 5k of color data.
+Note there is a PowerPaint checkbox above the reload button - when
+set this will affect the load and scale functions to properly
+position the image for saving, but it is not required.
 
 ColecoVision cartridge - This is just a simple .ROM file for 
 ColecoVision that displays the picture. You can load it in 

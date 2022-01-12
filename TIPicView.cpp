@@ -72,6 +72,7 @@ int nCurrentByte;
 int PIXA,PIXB,PIXC,PIXD,PIXE,PIXF;
 int g_orderSlide = 0;			// the step (n/17) that is subtracted from the ordered dither pattern to darken
 int g_nFilter=4;
+int g_PowerPaint = 0;
 int g_nPortraitMode=0;
 int g_Perceptual=0;				// enable perceptual RGB color matching instead of YCrCb
 int g_AccumulateErrors=1;		// accumulate errors instead of averaging (old method)
@@ -303,6 +304,7 @@ void CTIPicViewApp::loadSettings() {
 	readint(PIXF,               _T("PIXF"));
 	readint(g_orderSlide,       _T("OrderSlide"));
 	readint(g_nFilter,          _T("Filter"));
+	readint(g_PowerPaint,       _T("PowerPaint"));
 	readint(g_nPortraitMode,    _T("PortraitMode"));
 	readint(g_Perceptual,       _T("Perceptual"));
 	readint(g_AccumulateErrors, _T("AccumulateErrors"));
@@ -348,6 +350,7 @@ void CTIPicViewApp::saveSettings() {
 	writeint(PIXF,                  _T("PIXF"));
 	writeint(g_orderSlide,          _T("OrderSlide"));
 	writeint(g_nFilter,             _T("Filter"));
+	writeint(g_PowerPaint,          _T("PowerPaint"));
 	writeint(g_nPortraitMode,       _T("PortraitMode"));
 	writeint(g_Perceptual,          _T("Perceptual"));
 	writeint(g_AccumulateErrors,    _T("AccumulateErrors"));

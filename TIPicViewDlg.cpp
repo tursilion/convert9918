@@ -19,6 +19,7 @@ static bool fInSlideMode=false;
 extern int PIXA,PIXB,PIXC,PIXD,PIXE,PIXF;
 extern int g_orderSlide;
 extern int g_nFilter;
+extern int g_PowerPaint;
 extern int g_nPortraitMode;
 extern int pixeloffset, heightoffset;
 extern int g_Perceptual;
@@ -199,6 +200,7 @@ END_MESSAGE_MAP()
 CTIPicViewDlg::CTIPicViewDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CTIPicViewDlg::IDD, pParent)
 	, m_nOrderSlide(0)
+	,m_chkPowerPaint(FALSE)
 {
 	//{{AFX_DATA_INIT(CTIPicViewDlg)
 		// NOTE: the ClassWizard will add member initialization here
@@ -220,39 +222,40 @@ void CTIPicViewDlg::DoDataExchange(CDataExchange* pDX)
 	//{{AFX_DATA_MAP(CTIPicViewDlg)
 	// NOTE: the ClassWizard will add DDX and DDV calls here
 	//}}AFX_DATA_MAP
-	DDX_Control(pDX, IDC_COMBO1, m_ctrlList);
-	DDX_Text(pDX, IDC_EDIT1, m_pixelD);
-	DDV_MinMaxUInt(pDX, m_pixelD, 0, 16);
-	DDX_Text(pDX, IDC_EDIT2, m_pixelC);
-	DDV_MinMaxUInt(pDX, m_pixelC, 0, 16);
-	DDX_Text(pDX, IDC_EDIT3, m_pixelB);
-	DDV_MinMaxUInt(pDX, m_pixelB, 0, 16);
-	DDX_Text(pDX, IDC_EDIT4, m_pixelA);
-	DDV_MinMaxUInt(pDX, m_pixelA, 0, 16);
-	DDX_Text(pDX, IDC_EDIT6, m_pixelE);
-	DDV_MinMaxUInt(pDX, m_pixelE, 0, 16);
-	DDX_Text(pDX, IDC_EDIT5, m_pixelF);
-	DDV_MinMaxUInt(pDX, m_pixelF, 0, 16);
-	DDX_CBIndex(pDX, IDC_FILTER, m_nFilter);
-	DDX_CBIndex(pDX, IDC_PORTRAIT, m_nPortraitMode);
-	DDX_CBIndex(pDX, IDC_ERRMODE, m_ErrMode);
-	DDX_Text(pDX, IDC_MAXDIFF, m_MaxDiff);
-	DDV_MinMaxInt(pDX, m_MaxDiff, 1, 100);
-	DDX_Text(pDX, IDC_COLDIFF, m_MaxColDiff);
-	DDV_MinMaxInt(pDX, m_MaxColDiff, 0, 100);
-	DDX_Text(pDX, IDC_PERPR, m_PercepR);
-	DDV_MinMaxInt(pDX, m_PercepR, 0, 100);
-	DDX_Text(pDX, IDC_PERPG, m_PercepG);
-	DDV_MinMaxInt(pDX, m_PercepG, 0, 100);
-	DDX_Text(pDX, IDC_PERPB, m_PercepB);
-	DDV_MinMaxInt(pDX, m_PercepB, 0, 100);
-	DDX_Text(pDX, IDC_STATICCNT, m_StaticCols);
-	DDV_MinMaxInt(pDX, m_StaticCols, 0, 14);
-	DDX_Text(pDX, IDC_LUMA, m_Luma);
-	DDX_Text(pDX, IDC_GAMMA, m_Gamma);
-	DDX_Slider(pDX, IDC_ORDERSLIDE, m_nOrderSlide);
-	DDV_MinMaxInt(pDX, m_nOrderSlide, 0, 16);
-	DDX_Control(pDX, IDC_ORDERSLIDE, ctrlOrderSlide);
+	DDX_Control(pDX,IDC_COMBO1,m_ctrlList);
+	DDX_Text(pDX,IDC_EDIT1,m_pixelD);
+	DDV_MinMaxUInt(pDX,m_pixelD,0,16);
+	DDX_Text(pDX,IDC_EDIT2,m_pixelC);
+	DDV_MinMaxUInt(pDX,m_pixelC,0,16);
+	DDX_Text(pDX,IDC_EDIT3,m_pixelB);
+	DDV_MinMaxUInt(pDX,m_pixelB,0,16);
+	DDX_Text(pDX,IDC_EDIT4,m_pixelA);
+	DDV_MinMaxUInt(pDX,m_pixelA,0,16);
+	DDX_Text(pDX,IDC_EDIT6,m_pixelE);
+	DDV_MinMaxUInt(pDX,m_pixelE,0,16);
+	DDX_Text(pDX,IDC_EDIT5,m_pixelF);
+	DDV_MinMaxUInt(pDX,m_pixelF,0,16);
+	DDX_CBIndex(pDX,IDC_FILTER,m_nFilter);
+	DDX_CBIndex(pDX,IDC_PORTRAIT,m_nPortraitMode);
+	DDX_CBIndex(pDX,IDC_ERRMODE,m_ErrMode);
+	DDX_Text(pDX,IDC_MAXDIFF,m_MaxDiff);
+	DDV_MinMaxInt(pDX,m_MaxDiff,1,100);
+	DDX_Text(pDX,IDC_COLDIFF,m_MaxColDiff);
+	DDV_MinMaxInt(pDX,m_MaxColDiff,0,100);
+	DDX_Text(pDX,IDC_PERPR,m_PercepR);
+	DDV_MinMaxInt(pDX,m_PercepR,0,100);
+	DDX_Text(pDX,IDC_PERPG,m_PercepG);
+	DDV_MinMaxInt(pDX,m_PercepG,0,100);
+	DDX_Text(pDX,IDC_PERPB,m_PercepB);
+	DDV_MinMaxInt(pDX,m_PercepB,0,100);
+	DDX_Text(pDX,IDC_STATICCNT,m_StaticCols);
+	DDV_MinMaxInt(pDX,m_StaticCols,0,14);
+	DDX_Text(pDX,IDC_LUMA,m_Luma);
+	DDX_Text(pDX,IDC_GAMMA,m_Gamma);
+	DDX_Slider(pDX,IDC_ORDERSLIDE,m_nOrderSlide);
+	DDV_MinMaxInt(pDX,m_nOrderSlide,0,16);
+	DDX_Control(pDX,IDC_ORDERSLIDE,ctrlOrderSlide);
+	DDX_Check(pDX,IDC_CHKPOWERPAINT,m_chkPowerPaint);
 }
 
 BEGIN_MESSAGE_MAP(CTIPicViewDlg, CDialog)
@@ -345,6 +348,7 @@ BOOL CTIPicViewDlg::OnInitDialog()
 	m_pixelF=PIXF;
 	m_nOrderSlide=g_orderSlide;
 	m_nFilter=g_nFilter;
+	m_chkPowerPaint = g_PowerPaint ? true : false;
 	m_nPortraitMode=g_nPortraitMode;
 	m_ErrMode=g_AccumulateErrors?1:0;
 	m_MaxDiff=g_MaxMultiDiff;
@@ -620,12 +624,13 @@ void CTIPicViewDlg::OnButton4()
         ftTIXBRLE,
 	    ftMSXSC2,
         ftCVPaint,
+		ftCVPowerPaint,
 	    ftColecoROM,
 	    ftColecoROMRLE,
 	    ftPNG
     };
 
-	CString csFmt = _T("TIFILES Format Header|*.*|V9T9 Format Header|*.*|Raw Files|*.*|RLE Files|*.*|TI XB Program|*.*|TI XB RLE Program|*.*|MSX SC2|*.SC2|Coleco CVPaint|*.pc|ColecoVision Cart|*.ROM|ColecoVision RLE Cart (Broken)|*.ROM|PNG file (PC)|*.PNG||");
+	CString csFmt = _T("TIFILES Format Header|*.*|V9T9 Format Header|*.*|Raw Files|*.*|RLE Files|*.*|TI XB Program|*.*|TI XB RLE Program|*.*|MSX SC2|*.SC2|Coleco CVPaint|*.pc|Adam PowerPaint 10k|*.pp|ColecoVision Cart|*.ROM|ColecoVision RLE Cart (Broken)|*.ROM|PNG file (PC)|*.PNG||");
 	CFileDialog dlg(false, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, csFmt);
 
 	// Save image
@@ -672,6 +677,8 @@ void CTIPicViewDlg::OnButton4()
 		    case ftTIXB:
 		    case ftTIXBRLE:
 		    case ftMSXSC2:
+			case ftCVPaint:
+			case ftCVPowerPaint:
 		    case ftColecoROM:
 		    case ftColecoROMRLE:
 		    case ftPNG:
@@ -809,6 +816,7 @@ void CTIPicViewDlg::OnButton4()
 				break;
 
 			case ftCVPaint:	// No header
+			case ftCVPowerPaint:
 				debug(_T("No headers will be written.\n"));
 				break;
 
@@ -889,6 +897,7 @@ void CTIPicViewDlg::OnButton4()
                 // nothing for programs here?
                 break;
 
+			// TODO: we should import CVPaint and PowerPaint too
             case ftCVPaint:
                 // just a single output file for Coleco CVPaint
 				cs+=_T(".pc");
@@ -899,7 +908,17 @@ void CTIPicViewDlg::OnButton4()
 			    }
 				break;
 
-	        case ftColecoROM:
+            case ftCVPowerPaint:
+                // just a single output file for Coleco Adam Powerpaint
+				cs+=_T(".pp");
+			    _wfopen_s(&fP, cs, _T("wb"));
+			    if (NULL == fP) {
+				    AfxMessageBox(_T("Failed to open output file"));
+				    return;
+			    }
+				break;
+
+			case ftColecoROM:
 	        case ftColecoROMRLE:
 				// colecovision
 				cs+=_T(".rom");
@@ -951,6 +970,7 @@ void CTIPicViewDlg::OnButton4()
 				break;
 
             case ftCVPaint:
+			case ftCVPowerPaint:
 			case ftColecoROM:	// ColecoVision
 			case ftColecoROMRLE:// ColecoVision with RLE
 				// no preparation needed here
@@ -988,6 +1008,7 @@ void CTIPicViewDlg::OnButton4()
 		    case ftTIXBRLE:
 		    case ftMSXSC2:
             case ftCVPaint:
+			case ftCVPowerPaint:
 		    case ftColecoROM:
 		    case ftColecoROMRLE:
 		    case ftPNG:
@@ -1027,6 +1048,7 @@ void CTIPicViewDlg::OnButton4()
 		            case ftTIXBRLE:
 		            case ftMSXSC2:
                     case ftCVPaint:
+					case ftCVPowerPaint:
 		            case ftColecoROM:
 		            case ftColecoROMRLE:
 		            case ftPNG:
@@ -1066,6 +1088,7 @@ void CTIPicViewDlg::OnButton4()
 		                    case ftTIXBRLE:
 		                    case ftMSXSC2:
                             case ftCVPaint:
+							case ftCVPowerPaint:
 		                    case ftColecoROM:
 		                    case ftColecoROMRLE:
 		                    case ftPNG:
@@ -1596,7 +1619,43 @@ void CTIPicViewDlg::OnButton4()
                 // as our own extension, we'll add the M data after the C data
 				fwrite(pbuf, 1, nOutputPSize, fP);				// always at least a pattern table
 				if (nOutputCSize>0) fwrite(cbuf, 1, nOutputCSize, fP);
-				if (nOutputMSize>0) fwrite(mbuf, 1, nOutputMSize, fP);
+				if (nOutputMSize>0) fwrite(mbuf, 1, nOutputMSize, fP);	// this never happens?
+				break;
+
+			case ftCVPowerPaint:
+				// very similar to CVPaint, but not all the data is used
+				// the left two columns are unused, as well as the bottom
+				// four rows. We're going to save the image from the left,
+				// so we need to fake those two unused rows.
+				// Note there is a 40k and 80k multi-screen format that uses
+				// the opposite order of color/pattern. (40k is 2x2 screens,
+				// and 80k is 2x4 screens)
+				// pattern table
+				for (int idx=0; idx<20*32*8; idx+=32*8) {
+					// write 16 bytes of left buffer, pattern
+					fwrite("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 1, 16, fP);
+					// write one 240 pixel row
+					fwrite(&pbuf[idx], 1, 30*8, fP);
+				}
+				// should always be a color table...?
+				if (nOutputCSize>0) {
+					for (int idx=0; idx<20*32*8; idx+=32*8) {
+						// write 16 bytes of left buffer, color
+						fwrite("\xf1\xf1\xf1\xf1\xf1\xf1\xf1\xf1\xf1\xf1\xf1\xf1\xf1\xf1\xf1\xf1", 1, 16, fP);
+						// write one 240 pixel row
+						fwrite(&cbuf[idx], 1, 30*8, fP);
+					}
+				} else {
+					// write a default color table
+					// not sure if this should be inverted...
+					for (int idx=0; idx<5*1024; ++idx) {
+						fputc(0xf1, fP);
+					}
+				}
+				// there's no good way to deal with the M file here...
+				if (nOutputMSize > 0) {
+					printf("** warning: powerpaint doesn't support M files...\n");
+				}
 				break;
 
 			case ftColecoROM:	// colecovision cartridge
@@ -1805,6 +1864,7 @@ void CTIPicViewDlg::LaunchMain(int mode, CString pFile) {
 	PIXF=m_pixelF;
 	g_orderSlide = m_nOrderSlide;
 	g_nFilter = m_nFilter;
+	g_PowerPaint = m_chkPowerPaint ? 1 : 0;
 	g_nPortraitMode = m_nPortraitMode;
 	g_AccumulateErrors = (m_ErrMode == 0) ? 0 : 1;
 	g_MaxMultiDiff = m_MaxDiff;

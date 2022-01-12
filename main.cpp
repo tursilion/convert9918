@@ -48,6 +48,7 @@ bool fRand;
 bool fVerbose = false;
 extern int g_orderSlide;
 extern int g_nFilter;
+extern int g_PowerPaint;
 extern int g_nPortraitMode;
 extern int g_UsePerLinePalette;
 extern int g_UseColorOnly;
@@ -547,6 +548,11 @@ void maincode(int mode, CString pFile, double dark)
 
 	iWidth=256;
 	iHeight=192;
+	if (g_PowerPaint) {
+		// fix sizes for scaling, we'll patch it up before we exit
+		iWidth = 240;
+		iHeight = 160;
+	}
 
 	fRand=false;
 	
@@ -711,6 +717,7 @@ void maincode(int mode, CString pFile, double dark)
 		default:
 			hBuffer=NULL;
 			// is it TI Artist?
+			// TODO: load Coleco PC and PP files too
 			{
 				CString csTmp=szFileName;
 				if ((csTmp.Right(5).CompareNoCase(_T(".TIAP")) == 0) ||
@@ -837,6 +844,25 @@ ohJustSkipTheLoad:
 		}
 
 		GlobalFree(hBuffer);
+
+		// if it was powerpaint, let's fix it up to 256 wide now
+		if (g_PowerPaint) {
+			HGLOBAL hBuf3 = GlobalAlloc(GPTR, 256*192*3);
+			if (NULL == hBuf3) {
+				// treat it as a failure
+				printf("* Memory allocation failure.\n");
+				return;
+			}
+			// need to pad the image out into our new buffer
+			memset(hBuf3, 0, 256*192*3);
+			for (int idx=0; idx<160; ++idx) {
+				memcpy(((unsigned char*)hBuf3)+idx*256*3, ((unsigned char*)hBuffer2)+idx*240*3, 240*3);
+			}
+			iWidth=256;
+			iHeight=192;
+			GlobalFree(hBuffer2);
+			hBuffer2 = hBuf3;
+		}
 
 		// flag that we actually used the current setting
 		((CTIPicViewDlg*)pWnd)->MakeConversionModeValid();
@@ -1180,7 +1206,9 @@ bool ScalePic(int nFilter, int nPortraitMode)
 	}
 
 	// apply portrait cropping if needed, max Y is 192 pixels
-	if (finalH > 192) {
+	int hh = 192;
+	if (g_PowerPaint) hh = 160;
+	if (finalH > hh) {
 		int y=0;
 
 		debug(_T("Cropping...\n"));
@@ -1198,12 +1226,12 @@ bool ScalePic(int nFilter, int nPortraitMode)
 
 			case 2:		// middle
 				// move the middle to the top
-				y=(finalH-192)/2;
+				y=(finalH-hh)/2;
 				break;
 
 			case 3:		// bottom
 				// move the bottom to the top
-				y=(finalH-192);
+				y=(finalH-hh);
 				break;
 		}
 		if (heightoffset != 0) {
@@ -1214,18 +1242,20 @@ bool ScalePic(int nFilter, int nPortraitMode)
 				y++;
 				heightoffset++;
 			}
-			while ((unsigned)y+191 >= finalH) {
+			while ((unsigned)y+(hh-1) >= finalH) {
 				y--;
 				heightoffset--;
 			}
 		}
-		finalH=192;
+		finalH=hh;
 		if (y > 0) {
-			memmove(tmpBuffer, (unsigned char*)tmpBuffer+y*finalW*3, 192*finalW*3);
+			memmove(tmpBuffer, (unsigned char*)tmpBuffer+y*finalW*3, hh*finalW*3);
 		}
 	}
 	// apply landscape cropping if needed, max X is 256 pixels
-	if (finalW > 256) {
+	int ww=256;
+	if (g_PowerPaint) ww=240;
+	if (finalW > ww) {
 		int x;
 		unsigned char *p1,*p2;
 
@@ -1246,12 +1276,12 @@ bool ScalePic(int nFilter, int nPortraitMode)
 
 			case 2:		// middle
 				// move the middle 
-				x=(finalW-256)/2;
+				x=(finalW-ww)/2;
 				break;
 
 			case 3:		// bottom
 				// move the right edge
-				x=(finalW-256);
+				x=(finalW-ww);
 				break;
 		}
 		if (x >= 0) {
@@ -1260,12 +1290,12 @@ bool ScalePic(int nFilter, int nPortraitMode)
 			p1=(unsigned char*)tmpBuffer;
 			p2=p1+x*3;
 			for (unsigned int y=0; y<finalH; y++) {
-				memmove(p1, p2, 256*3);
+				memmove(p1, p2, ww*3);
 				p2+=finalW*3;
-				p1+=256*3;
+				p1+=ww*3;
 			}
 		}
-		finalW=256;
+		finalW=ww;
 	}
 
 	if (NULL == hBuffer2) {
@@ -1294,9 +1324,9 @@ bool ScalePic(int nFilter, int nPortraitMode)
 	if (pixeloffset != 0) {
 		debug(_T("Nudging %d pixels...\n"), pixeloffset);
 		if (pixeloffset > 0) {
-			memmove(hBuffer2, (char*)hBuffer2+pixeloffset*3, (256*192-pixeloffset)*3);
+			memmove(hBuffer2, (char*)hBuffer2+pixeloffset*3, (ww*hh-pixeloffset)*3);
 		} else {
-			memmove((char*)hBuffer2-pixeloffset*3, hBuffer2, (256*192+pixeloffset)*3);
+			memmove((char*)hBuffer2-pixeloffset*3, hBuffer2, (ww*hh+pixeloffset)*3);
 		}
 	}
 

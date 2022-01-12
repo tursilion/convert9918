@@ -114,6 +114,8 @@ public:
 	afx_msg void OnBnClickedDiag();
 	afx_msg void OnBnClickedOrdered3();
 	afx_msg void OnBnClickedOrdered4();
+	// // when true, reduce size of image to 240x160
+	BOOL m_chkPowerPaint;
 };
 
 //{{AFX_INSERT_LOCATION}}
