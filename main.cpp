@@ -19,7 +19,7 @@
 bool StretchHist;
 void MYRGBTo8BitDithered(BYTE *pRGB, BYTE *p8Bit, MYRGBQUAD *pal, double dark);
 
-#define MAXFILES 200000
+#define MAXFILES 500000
 
 int pixeloffset;
 int heightoffset;

@@ -3,7 +3,7 @@ This depot is not guaranteed to build at any given time - it's my bleeding edge 
 Convert9918 v182
 ================
 
-![Screenshot](https://github.com/tursilion/convert9918/raw/master/dist/Convert9918_1.png)
+![Screenshot](https://github.com/tursilion/convert9918/raw/main/dist/Convert9918_1.png)
 
 This program can convert most modern graphics into a form compatible with the TMS9918A bitmap mode. It supports a drag-and-drop interface and handles resizing and scaling, several forms of user-configurable dithering, adjustable color selection, and more. 
 
@@ -15,7 +15,7 @@ While it supports writing raw data for pattern and color tables, it also support
 
 Sample video at [https://youtu.be/ctqIqV2YTGQ](https://youtu.be/ctqIqV2YTGQ) 
 
-Download the latest release zip here: [https://github.com/tursilion/convert9918/raw/master/dist/Convert9918.zip](https://github.com/tursilion/convert9918/raw/master/dist/Convert9918.zip)
+Download the latest release zip here: [https://github.com/tursilion/convert9918/raw/main/dist/Convert9918.zip](https://github.com/tursilion/convert9918/raw/main/dist/Convert9918.zip)
 
 Want to donate?
 ---------------
