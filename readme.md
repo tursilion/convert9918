@@ -1,4 +1,4 @@
-v182
+v183
 
 This program can convert most modern graphics into a form compatible with the TMS9918A bitmap mode. It supports a drag-and-drop interface and handles resizing and scaling, several forms of user-configurable dithering, adjustable color selection, and more. 
 

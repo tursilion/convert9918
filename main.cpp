@@ -47,6 +47,7 @@ bool fFirstLoad=false;
 bool fRand;
 bool fVerbose = false;
 extern int g_orderSlide;
+extern int g_ctrlList;
 extern int g_nFilter;
 extern int g_PowerPaint;
 extern int g_nPortraitMode;
@@ -524,7 +525,13 @@ void maincode(int mode, CString pFile, double dark)
 		// I build this on the assumption that the _s string functions would just
 		// truncate and move on on long strings. that's untrue - they assert and fatal.
 		// We can override that for now like this:
+#ifdef _DEBUG
+		_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
+		_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF|_CRTDBG_LEAK_CHECK_DF);
+#else
 		_CrtSetReportMode(_CRT_ASSERT, 0);
+#endif
+
 		_set_invalid_parameter_handler(app_handler);
 		// TODO: I really have paths this long. I should fix this.
 
@@ -1032,7 +1039,7 @@ ohJustSkipTheLoad:
 	}
 
 	fFirstLoad=true;
-	delete[] hBuffer2;
+	GlobalFree(hBuffer2);
 }
 
 void BuildFileList(wchar_t *szFolder)
@@ -1299,7 +1306,7 @@ bool ScalePic(int nFilter, int nPortraitMode)
 	}
 
 	if (NULL == hBuffer2) {
-		hBuffer2=new BYTE[iWidth * iHeight * 3];
+		hBuffer2=GlobalAlloc(GPTR, iWidth * iHeight * 3);
 		ZeroMemory(hBuffer2, iWidth * iHeight * 3);
 	}
 

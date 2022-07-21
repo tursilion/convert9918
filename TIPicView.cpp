@@ -71,6 +71,7 @@ int numOptions;
 int nCurrentByte;
 int PIXA,PIXB,PIXC,PIXD,PIXE,PIXF;
 int g_orderSlide = 0;			// the step (n/17) that is subtracted from the ordered dither pattern to darken
+int g_ctrlList = 0;             // the type of file being saved
 int g_nFilter=4;
 int g_PowerPaint = 0;
 int g_nPortraitMode=0;
@@ -303,6 +304,7 @@ void CTIPicViewApp::loadSettings() {
 	readint(PIXE,               _T("PIXE"));
 	readint(PIXF,               _T("PIXF"));
 	readint(g_orderSlide,       _T("OrderSlide"));
+	readint(g_ctrlList,         _T("CtrlList"));
 	readint(g_nFilter,          _T("Filter"));
 	readint(g_PowerPaint,       _T("PowerPaint"));
 	readint(g_nPortraitMode,    _T("PortraitMode"));
@@ -349,6 +351,7 @@ void CTIPicViewApp::saveSettings() {
 	writeint(PIXE,                  _T("PIXE"));
 	writeint(PIXF,                  _T("PIXF"));
 	writeint(g_orderSlide,          _T("OrderSlide"));
+	writeint(g_ctrlList,            _T("CtrlList"));
 	writeint(g_nFilter,             _T("Filter"));
 	writeint(g_PowerPaint,          _T("PowerPaint"));
 	writeint(g_nPortraitMode,       _T("PortraitMode"));

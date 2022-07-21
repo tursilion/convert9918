@@ -78,8 +78,8 @@ CAPTION "Convert9918 by Mike Brent aka Tursi"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,11,17,20,20
-    LTEXT           "Convert9918 Version 182",IDC_STATIC,40,10,119,8,SS_NOPREFIX
-    LTEXT           "Copyright (C) 2022 MIke Brent/HarmlessLion.com",IDC_STATIC,40,25,188,8
+    LTEXT           "Convert9918 Version 183",IDC_STATIC,40,10,119,8,SS_NOPREFIX
+    LTEXT           "Copyright (C) 2022 Mike Brent/HarmlessLion.com",IDC_STATIC,40,25,188,8
     DEFPUSHBUTTON   "OK",IDOK,178,7,50,14,WS_GROUP
 END
 

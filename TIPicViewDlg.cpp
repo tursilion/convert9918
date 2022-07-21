@@ -18,6 +18,7 @@ extern bool StretchHist;
 static bool fInSlideMode=false;
 extern int PIXA,PIXB,PIXC,PIXD,PIXE,PIXF;
 extern int g_orderSlide;
+extern int g_ctrlList;
 extern int g_nFilter;
 extern int g_PowerPaint;
 extern int g_nPortraitMode;
@@ -333,7 +334,7 @@ BOOL CTIPicViewDlg::OnInitDialog()
 	m_ctrlList.AddString(_T("Bitmap color only 9918A"));
 	m_ctrlList.AddString(_T("Paletted Bitmap F18A"));
 	m_ctrlList.AddString(_T("Scanline Palette Bitmap F18A"));
-	m_ctrlList.SetCurSel(0);
+	m_ctrlList.SetCurSel(g_ctrlList);
 	OnCbnSelchangeCombo1();
 
 	// set up the slider
@@ -1863,6 +1864,7 @@ void CTIPicViewDlg::LaunchMain(int mode, CString pFile) {
 	PIXE=m_pixelE;
 	PIXF=m_pixelF;
 	g_orderSlide = m_nOrderSlide;
+    g_ctrlList = m_ctrlList.GetCurSel();
 	g_nFilter = m_nFilter;
 	g_PowerPaint = m_chkPowerPaint ? 1 : 0;
 	g_nPortraitMode = m_nPortraitMode;
