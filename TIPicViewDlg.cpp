@@ -7,6 +7,7 @@
 #include "TIPicViewDlg.h"
 #include "D:\WORK\imgsource\4.0\islibs40_vs17_unicode\ISource.h"
 #include "xbtest.h"
+#include "ClipboardRead.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -2332,12 +2333,19 @@ void CTIPicViewDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	CDialog::OnTimer(nIDEvent);
 
+	// check if there's a clipboard image
+	if (clipboardRead()) {
+		LaunchMain(2, myTmpFile.getfilename());		// image is already loaded to RAM
+		return;
+	}
+
 	// don't even check if the flag is set - we set it to '2' here
 	// maincode will set it to '1'
 	if (InterlockedCompareExchange(&cs, 1, 2) != 0) {
 		return;
 	}
 
+	// check for an updated shared filename - allows multiple instances to all convert the same image
 	if (NULL != pSharedPointer) {
 		// this isn't very atomic, but, it's never supposed to
 		// change after the first time it's set.

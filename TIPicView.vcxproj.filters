@@ -39,6 +39,9 @@
     <ClCompile Include="quantize_new.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CliboardRead.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="TIPicView.rc">
@@ -71,6 +74,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="quantize_common.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClipboardRead.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

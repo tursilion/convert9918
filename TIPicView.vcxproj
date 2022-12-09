@@ -179,7 +179,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>D:\WORK\imgsource\4.0\issrc4_0_7_0_vs2017_Unicode\ISLib\Release_VS05\ISLibMS40.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>D:\WORK\imgsource\4.0\issrc4_0_7_0_vs2019_Unicode\ISLib\Release_VS05\ISLibMS40.lib;uafxcw.lib;libcmt.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AssemblyDebug>true</AssemblyDebug>
@@ -189,8 +189,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <TargetMachine>MachineX86</TargetMachine>
-      <IgnoreSpecificDefaultLibraries>
-      </IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>uafxcwd;libcmt</IgnoreSpecificDefaultLibraries>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -294,7 +293,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>D:\WORK\imgsource\4.0\issrc4_0_7_0_vs2017_Unicode\ISLib\DebugSmall_VS05\ISLibMSD40.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>D:\WORK\imgsource\4.0\issrc4_0_7_0_vs2019_Unicode\ISLib\DebugSmall_VS05\ISLibMSD40.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>.\Debug/TIPicView.pdb</ProgramDatabaseFile>
@@ -353,6 +352,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CliboardRead.cpp" />
     <ClCompile Include="main.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -402,6 +402,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ClipboardRead.h" />
     <ClInclude Include="median_cut.h" />
     <ClInclude Include="quantize_common.h" />
     <ClInclude Include="xbtest.h" />

@@ -291,6 +291,15 @@ be available in random order each time you click 'Next'.
 You can process and save any you like. To exit this
 mode you must close the program.
 
+In this special mode, all instances of convert9918 will listen to each
+other (ConvertHGR too!) If you load a new image in one, they will all
+load that file.
+
+As of v184 this special mode also watches the clipboard for new images.
+It will write the image automatically to a temporary file and then load
+it. The clipboard is cleared, so be aware! The temporary file will be
+deleted on exit.
+
 Finally, there is a simple command line interface.
 Passing one filename will cause that image to be loaded and
 displayed in the GUI automatically.
