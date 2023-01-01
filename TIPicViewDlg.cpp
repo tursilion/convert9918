@@ -688,7 +688,9 @@ void CTIPicViewDlg::OnButton4()
                 break;
         }
 
+		// TODO: this is probably no longer very good with the multitude of extensions we have
 		if (checkTI) {
+			// overwrite test for TIAP filenames
 			cs=outfile;
 			cs+=".TIAP";
 			hFile=CreateFile(cs, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -872,13 +874,18 @@ void CTIPicViewDlg::OnButton4()
 				break;
 		}
 
+		// WARNING: All file types must open their file in this switch!!
+		// TODO: the filename changes here mean that we don't always warn about overwrite
+		// We should also check whether we needed to add the extension...
 		cs=outfile;
 		switch (dlg.m_pOFN->nFilterIndex) {
 	        case ftTIFILES:
 	        case ftV9T9:
 	        case ftRaw:
 	        case ftRLE:
-			    cs+="_P";
+		        if ((cs.Right(2).MakeUpper() != _T("_P")) && (cs.Right(5).MakeUpper() != _T(".TIAP"))) {
+				    cs+="_P";
+				}
 			    cs.MakeUpper();
                 {
 			        CString csRealName = cs;
@@ -895,14 +902,32 @@ void CTIPicViewDlg::OnButton4()
 
 	        case ftTIXB:
 	        case ftTIXBRLE:
-	        case ftMSXSC2:
-                // nothing for programs here?
+				// we still need to open the output file - no name change from requested
+			    _wfopen_s(&fP, cs, _T("wb"));
+			    if (NULL == fP) {
+				    AfxMessageBox(_T("Failed to open output file"));
+				    return;
+			    }
+                break;
+
+			case ftMSXSC2:
+		        if (cs.Right(4).MakeUpper() != _T(".SC2")) {
+					cs +=".sc2";
+				}
+				// we still need to open the output file - no name change from requested
+			    _wfopen_s(&fP, cs, _T("wb"));
+			    if (NULL == fP) {
+				    AfxMessageBox(_T("Failed to open output file"));
+				    return;
+			    }
                 break;
 
 			// TODO: we should import CVPaint and PowerPaint too
             case ftCVPaint:
                 // just a single output file for Coleco CVPaint
-				cs+=_T(".pc");
+		        if (cs.Right(3).MakeUpper() != _T(".PC")) {
+					cs+=_T(".pc");
+				}
 			    _wfopen_s(&fP, cs, _T("wb"));
 			    if (NULL == fP) {
 				    AfxMessageBox(_T("Failed to open output file"));
@@ -912,7 +937,9 @@ void CTIPicViewDlg::OnButton4()
 
             case ftCVPowerPaint:
                 // just a single output file for Coleco Adam Powerpaint
-				cs+=_T(".pp");
+		        if (cs.Right(3).MakeUpper() != _T(".PP")) {
+					cs+=_T(".pp");
+				}
 			    _wfopen_s(&fP, cs, _T("wb"));
 			    if (NULL == fP) {
 				    AfxMessageBox(_T("Failed to open output file"));
@@ -923,7 +950,9 @@ void CTIPicViewDlg::OnButton4()
 			case ftColecoROM:
 	        case ftColecoROMRLE:
 				// colecovision
-				cs+=_T(".rom");
+		        if (cs.Right(4).MakeUpper() != _T(".ROM")) {
+					cs+=_T(".rom");
+				}
 			    _wfopen_s(&fP, cs, _T("wb"));
 			    if (NULL == fP) {
 				    AfxMessageBox(_T("Failed to open output file"));
@@ -933,7 +962,9 @@ void CTIPicViewDlg::OnButton4()
 
             case ftPNG:
 				// PC PNG
-				cs+=_T(".png");
+		        if (cs.Right(4).MakeUpper() != _T(".PNG")) {
+					cs+=_T(".png");
+				}
 			    _wfopen_s(&fP, cs, _T("wb"));
 			    if (NULL == fP) {
 				    AfxMessageBox(_T("Failed to open output file"));

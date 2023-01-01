@@ -78,8 +78,8 @@ CAPTION "Convert9918 by Mike Brent aka Tursi"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,11,17,20,20
-    LTEXT           "Convert9918 Version 184",IDC_STATIC,40,10,119,8,SS_NOPREFIX
-    LTEXT           "Copyright (C) 2022 Mike Brent/HarmlessLion.com",IDC_STATIC,40,25,188,8
+    LTEXT           "Convert9918 Version 185",IDC_STATIC,40,10,119,8,SS_NOPREFIX
+    LTEXT           "Copyright (C) 2023 Mike Brent/HarmlessLion.com",IDC_STATIC,40,25,188,8
     DEFPUSHBUTTON   "OK",IDOK,178,7,50,14,WS_GROUP
 END
 
@@ -159,8 +159,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,8,4,0
- PRODUCTVERSION 1,8,4,0
+ FILEVERSION 1,8,5,0
+ PRODUCTVERSION 1,8,5,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -177,12 +177,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "harmlesslion.com"
             VALUE "FileDescription", "TMS9918A converter"
-            VALUE "FileVersion", "1.8.4.0"
+            VALUE "FileVersion", "1.8.5.0"
             VALUE "InternalName", "Convert9918"
-            VALUE "LegalCopyright", "Copyright (C) 2022 Mike Brent"
+            VALUE "LegalCopyright", "Copyright (C) 2023 Mike Brent"
             VALUE "OriginalFilename", "Convert9918.exe"
             VALUE "ProductName", "Convert9918"
-            VALUE "ProductVersion", "1.8.4.0"
+            VALUE "ProductVersion", "1.8.5.0"
         END
     END
     BLOCK "VarFileInfo"
