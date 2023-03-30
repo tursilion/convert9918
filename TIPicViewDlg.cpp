@@ -627,12 +627,13 @@ void CTIPicViewDlg::OnButton4()
 	    ftMSXSC2,
         ftCVPaint,
 		ftCVPowerPaint,
+        ftCVHGR,
 	    ftColecoROM,
 	    ftColecoROMRLE,
 	    ftPNG
     };
 
-	CString csFmt = _T("TIFILES Format Header|*.*|V9T9 Format Header|*.*|Raw Files|*.*|RLE Files|*.*|TI XB Program|*.*|TI XB RLE Program|*.*|MSX SC2|*.SC2|Coleco CVPaint|*.pc|Adam PowerPaint 10k|*.pp|ColecoVision Cart|*.ROM|ColecoVision RLE Cart (Broken)|*.ROM|PNG file (PC)|*.PNG||");
+	CString csFmt = _T("TIFILES Format Header|*.*|V9T9 Format Header|*.*|Raw Files|*.*|RLE Files|*.*|TI XB Program|*.*|TI XB RLE Program|*.*|MSX SC2|*.SC2|Coleco CVPaint|*.pc|Adam PowerPaint 10k|*.pp|Adam HGR|*.hgr,*.hgrh|ColecoVision Cart|*.ROM|ColecoVision RLE Cart (Broken)|*.ROM|PNG file (PC)|*.PNG||");
 	CFileDialog dlg(false, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, csFmt);
 
 	// Save image
@@ -681,6 +682,7 @@ void CTIPicViewDlg::OnButton4()
 		    case ftMSXSC2:
 			case ftCVPaint:
 			case ftCVPowerPaint:
+            case ftCVHGR:
 		    case ftColecoROM:
 		    case ftColecoROMRLE:
 		    case ftPNG:
@@ -821,8 +823,12 @@ void CTIPicViewDlg::OnButton4()
 
 			case ftCVPaint:	// No header
 			case ftCVPowerPaint:
-				debug(_T("No headers will be written.\n"));
+                debug(_T("No headers will be written.\n"));
 				break;
+
+            case ftCVHGR:
+                debug(_T("Type Adam HGR will be written.\n"));
+                break;
 
             case ftColecoROM:	// ColecoVision cartridge
 				if (g_UseHalfMulticolor) {
@@ -947,6 +953,18 @@ void CTIPicViewDlg::OnButton4()
 			    }
 				break;
 
+            case ftCVHGR:
+                // just a single output file for Coleco Adam HGR
+		        if ((cs.Right(3).MakeUpper() != _T(".HGR"))&&((cs.Right(3).MakeUpper() != _T(".HGRH")))) {
+					cs+=_T(".HGRH");
+				}
+			    _wfopen_s(&fP, cs, _T("wb"));
+			    if (NULL == fP) {
+				    AfxMessageBox(_T("Failed to open output file"));
+				    return;
+			    }
+				break;
+
 			case ftColecoROM:
 	        case ftColecoROMRLE:
 				// colecovision
@@ -1009,6 +1027,13 @@ void CTIPicViewDlg::OnButton4()
 				// no preparation needed here
 				break;
 
+            case ftCVHGR:
+                // There's a fixed (for us) 15 byte header. I haven't
+                // tried to figure out what the bytes mean, but they are the
+                // same in all examples.
+                fwrite("\x01\x00\x02\x6c\x6b\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", 1, 21, fP);
+                break;
+
 			case ftPNG:	// PNG file
 				// we don't need the conversion below, so just do the work and return here
 				if (NULL != fP) {
@@ -1042,6 +1067,7 @@ void CTIPicViewDlg::OnButton4()
 		    case ftMSXSC2:
             case ftCVPaint:
 			case ftCVPowerPaint:
+            case ftCVHGR:
 		    case ftColecoROM:
 		    case ftColecoROMRLE:
 		    case ftPNG:
@@ -1082,6 +1108,7 @@ void CTIPicViewDlg::OnButton4()
 		            case ftMSXSC2:
                     case ftCVPaint:
 					case ftCVPowerPaint:
+                    case ftCVHGR:
 		            case ftColecoROM:
 		            case ftColecoROMRLE:
 		            case ftPNG:
@@ -1122,6 +1149,7 @@ void CTIPicViewDlg::OnButton4()
 		                    case ftMSXSC2:
                             case ftCVPaint:
 							case ftCVPowerPaint:
+                            case ftCVHGR:
 		                    case ftColecoROM:
 		                    case ftColecoROMRLE:
 		                    case ftPNG:
@@ -1690,6 +1718,29 @@ void CTIPicViewDlg::OnButton4()
 					printf("** warning: powerpaint doesn't support M files...\n");
 				}
 				break;
+
+            case ftCVHGR:
+                // really similar to PowerPaint, but we can use the left two columns (maybe we could there too...)
+                // Also, color table first, so it must exist
+                // There's also a small header pre-pended, which is otherwise the main difference. The disk manager
+                // patches on some garbage data at the end, but I suspect that's not needed.
+                // There are only 32x20 rows in this file format.
+                if (nOutputCSize < 32*20*8) {
+                    for (int i=0; i<32*20*8; ++i) {
+                        fputc(0xf1, fP);
+                    }
+                } else {
+				    fwrite(cbuf, 1, min(nOutputCSize, 32*20*8), fP);
+                }
+                // then the pattern table
+                fwrite(pbuf, 1, 32*20*8, fP);
+                // in my sample there is padding here - a partial copy of the pattern table up to 11k, 
+                // but I think that's garbage from the disk manager. 
+				//fwrite(pbuf, 1, 1003, fP);
+				if (nOutputMSize > 0) {
+					printf("** warning: hgr doesn't support M files...\n");
+				}
+                break;
 
 			case ftColecoROM:	// colecovision cartridge
 			case ftColecoROMRLE:// colecovision RLE cartridge  (not working for some reason...)

@@ -186,6 +186,13 @@ Note there is a PowerPaint checkbox above the reload button - when
 set this will affect the load and scale functions to properly
 position the image for saving, but it is not required.
 
+CV HGR - This is the Adam HGR format. Again, this is a reduced
+screen size omitting the bottom four rows. (I am including the
+two missing columns, but I don't know if that's correct). There is
+a fixed 21 byte header that I didn't parse, then 5k of color data
+followed by 5k of pattern data. (Note the order is reversed from
+PowerPaint.)
+
 ColecoVision cartridge - This is just a simple .ROM file for 
 ColecoVision that displays the picture. You can load it in 
 an emulator or burn it to EPROM. Only Bitmap 9918A modes are 

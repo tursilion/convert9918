@@ -205,6 +205,108 @@ void debug(wchar_t *s, ...) {
 	}
 }
 
+// pBuf has the pattern table at 0, and the color table at 6144
+// Memory is returned, or NULL
+HGLOBAL ParsePixelData(unsigned char *pBuf, int palSize) {
+    unsigned char *pOut, *p8Out;
+	// now parse it up to 24 bit
+	HGLOBAL hGlob = GlobalAlloc(GPTR, 256*192*3);
+	if (NULL == hGlob) {
+		free(pBuf);
+		return NULL;
+	}
+
+	pOut=(unsigned char*)hGlob;				// gives us the 24-bit source
+	p8Out=buf8;								// and just copy the original into here too (TODO: might not work for palettes...)
+	for (int row=0; row<24; row++) {
+		for (int line=0; line<8; line++) {
+			for (int col=0; col<32; col++) {
+				int offset=(row*32+col)*8+line;
+				if (palSize == 0) {
+					int fg=((*(pBuf+6144+offset))>>4)&0x0f;
+					// remap white and grey from TI colors to internal colors, make transparent black
+					if (fg == 0) {
+						fg = 1 ;
+					} else if (fg == 15) {
+						fg=0; 
+					} else if (fg == 14) {
+						fg=2;
+					} else if (fg > 1) {
+						fg++;
+					}
+					int bg=((*(pBuf+6144+offset)))&0x0f;
+					// remap white and grey from TI colors to internal colors, make transparent black
+					if (bg == 0) {
+						bg = 1 ;
+					} else if (bg == 15) {
+						bg=0; 
+					} else if (bg == 14) {
+						bg=2;
+					} else if (bg > 1) {
+						bg++;
+					}
+					int pix=*(pBuf+offset);
+					// now we have 8 pixels
+					int bit=0x80;
+					for (int cnt=0; cnt<8; cnt++) {
+						if (pix&bit) {
+							*(pOut++)=palinit16[fg].rgbRed;
+							*(pOut++)=palinit16[fg].rgbGreen;
+							*(pOut++)=palinit16[fg].rgbBlue;
+							*(p8Out++)=fg;
+						} else {
+							*(pOut++)=palinit16[bg].rgbRed;
+							*(pOut++)=palinit16[bg].rgbGreen;
+							*(pOut++)=palinit16[bg].rgbBlue;
+							*(p8Out++)=bg;
+						}
+						bit>>=1;
+					}
+				} else {
+					// almost the same, but with custom colors
+					MYRGBQUAD FG;
+					MYRGBQUAD BG;
+
+					int fg=((*(pBuf+6144+offset))>>4)&0x0f;
+					int bg=((*(pBuf+6144+offset)))&0x0f;
+					int rowoff = palSize == 32 ? 0 : ((row*8)+line)*32;
+
+					FG.rgbRed = ((*(pBuf+6144*2+fg*2+rowoff))&0x0f)<<4;
+					FG.rgbGreen = ((*(pBuf+6144*2+fg*2+rowoff+1))&0xf0);
+					FG.rgbBlue = ((*(pBuf+6144*2+fg*2+rowoff+1))&0x0f)<<4;
+					BG.rgbRed = ((*(pBuf+6144*2+bg*2+rowoff))&0x0f)<<4;
+					BG.rgbGreen = ((*(pBuf+6144*2+bg*2+rowoff+1))&0xf0);
+					BG.rgbBlue = ((*(pBuf+6144*2+bg*2+rowoff+1))&0x0f)<<4;
+
+					int pix=*(pBuf+offset);
+					// now we have 8 pixels
+					int bit=0x80;
+					for (int cnt=0; cnt<8; cnt++) {
+						if (pix&bit) {
+							*(pOut++)=FG.rgbRed;
+							*(pOut++)=FG.rgbGreen;
+							*(pOut++)=FG.rgbBlue;
+							*(p8Out++)=fg;
+						} else {
+							*(pOut++)=BG.rgbRed;
+							*(pOut++)=BG.rgbGreen;
+							*(pOut++)=BG.rgbBlue;
+							*(p8Out++)=bg;
+						}
+						bit>>=1;
+					}
+				}
+			}
+		}
+	}
+
+	if (palSize > 0) {
+		memcpy(buf8, "NOT-TI-PIC", 10);
+	}
+
+	return hGlob;
+}
+
 // read a TI Artist into a 24-bit color buffer :)
 // use palinit16[] about (remember only 15 colors there)
 // We know the filename must end with .TIA[P|C] or _[P|C]
@@ -214,7 +316,7 @@ void debug(wchar_t *s, ...) {
 HGLOBAL ReadTIArtist(CString csFile) {
 	HGLOBAL hGlob=NULL;
 	unsigned char identifier[128];
-	unsigned char *pBuf, *pOut, *p8Out;
+	unsigned char *pBuf;
 	bool bHeader=true;
 	bool bRLE=false;
 
@@ -395,100 +497,175 @@ test2:
 		palSize = 0;
 	}
 
-	// now parse it up to 24 bit
-	hGlob = GlobalAlloc(GPTR, 256*192*3);
-	if (NULL == hGlob) {
-		free(pBuf);
+    hGlob = ParsePixelData(pBuf, palSize);
+	free(pBuf);
+    return hGlob;
+}
+
+// read an MSX SC2 TI Artist into a 24-bit color buffer :)
+// use palinit16[] about (remember only 15 colors there)
+HGLOBAL ReadSC2(CString csFile) {
+	HGLOBAL hGlob=NULL;
+	unsigned char *pBuf;
+
+	FILE *fp=NULL;
+	_wfopen_s(&fp, csFile, _T("rb"));
+	if (NULL == fp) {
+		printf("Can't open %S\n", (LPCWSTR)csFile);
 		return NULL;
 	}
 
-	pOut=(unsigned char*)hGlob;				// gives us the 24-bit source
-	p8Out=buf8;								// and just copy the original into here too (TODO: might not work for palettes...)
-	for (int row=0; row<24; row++) {
-		for (int line=0; line<8; line++) {
-			for (int col=0; col<32; col++) {
-				int offset=(row*32+col)*8+line;
-				if (palSize == 0) {
-					int fg=((*(pBuf+6144+offset))>>4)&0x0f;
-					// remap white and grey from TI colors to internal colors
-					if (fg == 15) {
-						fg=0; 
-					} else if (fg == 14) {
-						fg=2;
-					} else if (fg > 1) {
-						fg++;
-					}
-					int bg=((*(pBuf+6144+offset)))&0x0f;
-					// remap white and grey from TI colors to internal colors
-					if (bg == 15) {
-						bg=0; 
-					} else if (bg == 14) {
-						bg=2;
-					} else if (bg > 1) {
-						bg++;
-					}
-					int pix=*(pBuf+offset);
-					// now we have 8 pixels
-					int bit=0x80;
-					for (int cnt=0; cnt<8; cnt++) {
-						if (pix&bit) {
-							*(pOut++)=palinit16[fg].rgbRed;
-							*(pOut++)=palinit16[fg].rgbGreen;
-							*(pOut++)=palinit16[fg].rgbBlue;
-							*(p8Out++)=fg;
-						} else {
-							*(pOut++)=palinit16[bg].rgbRed;
-							*(pOut++)=palinit16[bg].rgbGreen;
-							*(pOut++)=palinit16[bg].rgbBlue;
-							*(p8Out++)=bg;
-						}
-						bit>>=1;
-					}
-				} else {
-					// almost the same, but with custom colors
-					MYRGBQUAD FG;
-					MYRGBQUAD BG;
-
-					int fg=((*(pBuf+6144+offset))>>4)&0x0f;
-					int bg=((*(pBuf+6144+offset)))&0x0f;
-					int rowoff = palSize == 32 ? 0 : ((row*8)+line)*32;
-
-					FG.rgbRed = ((*(pBuf+6144*2+fg*2+rowoff))&0x0f)<<4;
-					FG.rgbGreen = ((*(pBuf+6144*2+fg*2+rowoff+1))&0xf0);
-					FG.rgbBlue = ((*(pBuf+6144*2+fg*2+rowoff+1))&0x0f)<<4;
-					BG.rgbRed = ((*(pBuf+6144*2+bg*2+rowoff))&0x0f)<<4;
-					BG.rgbGreen = ((*(pBuf+6144*2+bg*2+rowoff+1))&0xf0);
-					BG.rgbBlue = ((*(pBuf+6144*2+bg*2+rowoff+1))&0x0f)<<4;
-
-					int pix=*(pBuf+offset);
-					// now we have 8 pixels
-					int bit=0x80;
-					for (int cnt=0; cnt<8; cnt++) {
-						if (pix&bit) {
-							*(pOut++)=FG.rgbRed;
-							*(pOut++)=FG.rgbGreen;
-							*(pOut++)=FG.rgbBlue;
-							*(p8Out++)=fg;
-						} else {
-							*(pOut++)=BG.rgbRed;
-							*(pOut++)=BG.rgbGreen;
-							*(pOut++)=BG.rgbBlue;
-							*(p8Out++)=bg;
-						}
-						bit>>=1;
-					}
-				}
-			}
-		}
+	pBuf=(unsigned char*)malloc(6144*3);
+	if (NULL == pBuf) {
+		printf("Can't allocate temporary buffer\n");
+		fclose(fp);
+		return NULL;
 	}
+	// allow for max size of a scanline-palette image
+	memset(pBuf, 0, 6144*3);
 
+    // set pointer to pattern table
+    fseek(fp, 7, SEEK_SET);
+	fread(pBuf, 1, 6144, fp);
+
+    // set pointer to color table
+    fseek(fp, 0x2007, SEEK_SET);
+    fread(pBuf+6144, 1, 6144, fp);
+
+    // all done
+    fclose(fp);
+
+	// no palette file associated
+	int palSize = 0;
+
+    hGlob = ParsePixelData(pBuf, palSize);
 	free(pBuf);
+    return hGlob;
+}
 
-	if (palSize > 0) {
-		memcpy(buf8, "NOT-TI-PIC", 10);
+// read a Coleco PP file
+// use palinit16[] about (remember only 15 colors there)
+HGLOBAL ReadPP(CString csFile) {
+	HGLOBAL hGlob=NULL;
+	unsigned char *pBuf;
+
+	FILE *fp=NULL;
+	_wfopen_s(&fp, csFile, _T("rb"));
+	if (NULL == fp) {
+		printf("Can't open %S\n", (LPCWSTR)csFile);
+		return NULL;
 	}
 
-	return hGlob;
+	pBuf=(unsigned char*)malloc(6144*3);
+	if (NULL == pBuf) {
+		printf("Can't allocate temporary buffer\n");
+		fclose(fp);
+		return NULL;
+	}
+	// allow for max size of a scanline-palette image
+	memset(pBuf, 0, 6144*3);
+    memset(pBuf+6144, 0xf1, 6144);  // default color table
+
+    // set pointer to pattern table
+    fseek(fp, 0, SEEK_SET);
+	fread(pBuf, 1, 0x1400, fp);
+
+    // set pointer to color table
+    fseek(fp, 0x1400, SEEK_SET);
+    fread(pBuf+6144, 1, 0x1400, fp);
+
+    // all done
+    fclose(fp);
+
+	// no palette file associated
+	int palSize = 0;
+
+    hGlob = ParsePixelData(pBuf, palSize);
+	free(pBuf);
+    return hGlob;
+}
+
+// read a Coleco PC file
+// use palinit16[] about (remember only 15 colors there)
+HGLOBAL ReadPC(CString csFile) {
+	HGLOBAL hGlob=NULL;
+	unsigned char *pBuf;
+
+	FILE *fp=NULL;
+	_wfopen_s(&fp, csFile, _T("rb"));
+	if (NULL == fp) {
+		printf("Can't open %S\n", (LPCWSTR)csFile);
+		return NULL;
+	}
+
+	pBuf=(unsigned char*)malloc(6144*3);
+	if (NULL == pBuf) {
+		printf("Can't allocate temporary buffer\n");
+		fclose(fp);
+		return NULL;
+	}
+	// allow for max size of a scanline-palette image
+	memset(pBuf, 0, 6144*3);
+    memset(pBuf+6144, 0xf1, 6144);  // default color table
+
+    // set pointer to pattern table
+    fseek(fp, 0, SEEK_SET);
+	fread(pBuf, 1, 0x1800, fp);
+
+    // set pointer to color table
+    fseek(fp, 0x1800, SEEK_SET);
+    fread(pBuf+6144, 1, 0x1800, fp);
+
+    // all done
+    fclose(fp);
+
+	// no palette file associated
+	int palSize = 0;
+
+    hGlob = ParsePixelData(pBuf, palSize);
+	free(pBuf);
+    return hGlob;
+}
+// read a Coleco HGR file
+// use palinit16[] about (remember only 15 colors there)
+HGLOBAL ReadHGR(CString csFile) {
+	HGLOBAL hGlob=NULL;
+	unsigned char *pBuf;
+
+	FILE *fp=NULL;
+	_wfopen_s(&fp, csFile, _T("rb"));
+	if (NULL == fp) {
+		printf("Can't open %S\n", (LPCWSTR)csFile);
+		return NULL;
+	}
+
+	pBuf=(unsigned char*)malloc(6144*3);
+	if (NULL == pBuf) {
+		printf("Can't allocate temporary buffer\n");
+		fclose(fp);
+		return NULL;
+	}
+	// allow for max size of a scanline-palette image
+	memset(pBuf, 0, 6144*3);
+    memset(pBuf+6144, 0xf1, 6144);  // default color table
+
+    // set pointer to pattern table
+    fseek(fp, 0x1415, SEEK_SET);
+	fread(pBuf, 1, 0x1400, fp);
+
+    // set pointer to color table
+    fseek(fp, 0x15, SEEK_SET);
+    fread(pBuf+6144, 1, 0x1400, fp);
+
+    // all done
+    fclose(fp);
+
+	// no palette file associated
+	int palSize = 0;
+
+    hGlob = ParsePixelData(pBuf, palSize);
+	free(pBuf);
+    return hGlob;
 }
 
 // handles invalid arguments to strcpy_s and strcat_s, etc
@@ -740,11 +917,40 @@ void maincode(int mode, CString pFile, double dark)
 						inWidth=256;
 						inHeight=192;
 				}
+                if (csTmp.Right(4).CompareNoCase(_T(".SC2")) == 0) {
+						IS40_CloseSource(hSource);
+						hSource=NULL;
+						hBuffer=ReadSC2(csTmp);
+						inWidth=256;
+						inHeight=192;
+				}
+                if (csTmp.Right(3).CompareNoCase(_T(".PP")) == 0) {
+						IS40_CloseSource(hSource);
+						hSource=NULL;
+						hBuffer=ReadPP(csTmp);
+						inWidth=256;
+						inHeight=192;
+				}
+                if (csTmp.Right(3).CompareNoCase(_T(".PC")) == 0) {
+						IS40_CloseSource(hSource);
+						hSource=NULL;
+						hBuffer=ReadPC(csTmp);
+						inWidth=256;
+						inHeight=192;
+				}
+                if ( (csTmp.Right(4).CompareNoCase(_T(".HGR")) == 0)||(csTmp.Right(5).CompareNoCase(_T(".HGRH")) == 0) ) {
+						IS40_CloseSource(hSource);
+						hSource=NULL;
+						hBuffer=ReadHGR(csTmp);
+						inWidth=256;
+						inHeight=192;
+				}
+
 			}
 
 			if (NULL == hBuffer) {
 				// not something supported, then
-				printf("Unable to indentify file (corrupt?)\n-> %S <-\n", szFileName);
+				printf("Unable to identify file (corrupt?)\n-> %S <-\n", szFileName);
 				IS40_CloseSource(hSource);
 				return;
 			} else {
