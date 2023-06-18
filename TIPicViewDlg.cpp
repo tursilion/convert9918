@@ -25,6 +25,7 @@ extern int g_PowerPaint;
 extern int g_nPortraitMode;
 extern int pixeloffset, heightoffset;
 extern int g_Perceptual;
+extern int g_Cartoon;
 extern int g_UseColorOnly;
 extern int g_UseHalfMulticolor;
 extern int g_UseMulticolorOnly;
@@ -278,6 +279,7 @@ BEGIN_MESSAGE_MAP(CTIPicViewDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON3, &CTIPicViewDlg::OnBnClickedButton3)
 	ON_BN_CLICKED(IDC_BUTTON5, &CTIPicViewDlg::OnBnClickedButton5)
 	ON_BN_CLICKED(IDC_PERCEPT, &CTIPicViewDlg::OnBnClickedPercept)
+	ON_BN_CLICKED(IDC_CARTOON, &CTIPicViewDlg::OnBnClickedToon)
 	ON_BN_CLICKED(IDC_RELOAD, &CTIPicViewDlg::OnBnClickedReload)
 	ON_CBN_SELCHANGE(IDC_COMBO1, &CTIPicViewDlg::OnCbnSelchangeCombo1)
 	ON_BN_CLICKED(IDC_PALETTE, &CTIPicViewDlg::OnBnClickedPalette)
@@ -1937,6 +1939,21 @@ void CTIPicViewDlg::OnBnClickedPercept()
 	OnCbnSelchangeCombo1();
 }
 
+// Toon color
+void CTIPicViewDlg::OnBnClickedToon()
+{
+	CButton *pCtrl=(CButton*)GetDlgItem(IDC_CARTOON);
+	if (pCtrl) {
+		if (pCtrl->GetCheck() == BST_CHECKED) {
+			g_Cartoon=true;
+		} else {
+			g_Cartoon=false;
+		}
+	}
+	ResetControls();
+	OnCbnSelchangeCombo1();
+}
+
 void CTIPicViewDlg::LaunchMain(int mode, CString pFile) {
 	CollectData();
 
@@ -2199,7 +2216,16 @@ void CTIPicViewDlg::PrepareData()
 		}
 	}
 
-	UpdateData(false);
+	pCtrl=(CButton*)GetDlgItem(IDC_CARTOON);
+	if (pCtrl) {
+		if (g_Cartoon) {
+			pCtrl->SetCheck(BST_CHECKED);
+		} else {
+			pCtrl->SetCheck(BST_UNCHECKED);
+		}
+	}
+
+    UpdateData(false);
 }
 
 // helper for dither controls

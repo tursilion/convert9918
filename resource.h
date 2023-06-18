@@ -22,6 +22,8 @@
 #define IDC_HALFMULT                    1008
 #define IDC_PALETTE                     1008
 #define IDC_RND                         1009
+#define IDC_PERCEPT2                    1010
+#define IDC_CARTOON                     1010
 #define IDC_EDIT1                       1011
 #define IDC_EDIT2                       1012
 #define IDC_EDIT3                       1013

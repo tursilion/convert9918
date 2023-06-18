@@ -28,7 +28,7 @@ int cc, string_length, i, bit_size;
 unsigned char string[4096];
 struct LZW_STRING str[4096];
 HGLOBAL bmp;
-struct {
+static struct {
 	char r, g, b;
 } pal[256];
 int image_x, image_y, image_w, image_h, x, y;

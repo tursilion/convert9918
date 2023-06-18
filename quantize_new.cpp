@@ -35,7 +35,7 @@ extern int g_UsePalette;				// single F18A palette over whole image
 extern int g_StaticColors;				// fixed popular colors in per-scanline palette F18 mode (0-15 - note that 15 allows creation of static palette images)
 extern bool g_bStaticByPopularity;		// select static colors by popularity (else use median cut - default is popularity)
 extern int cols[4096];					// work space
-extern unsigned char pal[256][4];		// RGB0
+extern unsigned char pal[256][4];		// RGB0 - in TIPicView
 extern double YUVpal[256][4];			// YCrCb0 - misleadingly called YUV for easier typing
 extern Point points[256];
 extern RGBQUAD winpal[256];

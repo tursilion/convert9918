@@ -27,6 +27,7 @@ typedef char schar;
 
 #pragma pack(push)
 #pragma pack(1)
+// this structure is assumed in quantize_new where it's accessed as unsigned chars, be careful
 typedef struct tagMYRGBQUAD {
 	// mine is RGB instead of BGR
         BYTE    rgbRed;

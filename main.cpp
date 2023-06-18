@@ -17,7 +17,7 @@
 #include "TIPicViewDlg.h"
 
 bool StretchHist;
-void MYRGBTo8BitDithered(BYTE *pRGB, BYTE *p8Bit, MYRGBQUAD *pal, double dark);
+void MYRGBTo8BitDithered(BYTE *pRGB, BYTE *p8Bit, MYRGBQUAD *mainpal, double dark);
 
 #define MAXFILES 500000
 
@@ -58,6 +58,7 @@ extern double g_PercepR, g_PercepG, g_PercepB;
 extern double g_LumaEmphasis;
 extern double g_Gamma;
 extern int g_Perceptual;
+extern int g_Cartoon;
 extern int g_UsePalette;
 extern int g_GreyPalette;
 extern int g_UseHalfMulticolor;
@@ -68,7 +69,7 @@ extern int g_MapSize;
 extern wchar_t *cmdFileIn;		// from command line, makes a non-GUI mode
 extern wchar_t *cmdFileOut;
 extern HGLOBAL load_gif(wchar_t *filename, unsigned int *iWidth, unsigned int *iHeight);
-MYRGBQUAD pal[256];
+MYRGBQUAD mainpal[256];
 
 extern LPVOID pSharedPointer;
 extern wchar_t szLastFilename[256];	// used to make sure we don't reload our own shared file
@@ -81,7 +82,6 @@ BOOL ResizeRGBBiCubic(BYTE *pImgSrc, UINT32 uSrcWidthPix, UINT32 uSrcHeight, BYT
 // BIG NOTE! WHITE IS INSERTED AS COLOR 0, and TRANSPARENT IS NOT PRESENT
 // Furthermore, GREY is color 2! So, White, Black, Grey. 
 // This needs to be corrected when outputting the data.
-// So, 0=white,and the rest match the TI colors (white should be 15)
 MYRGBQUAD palinit16[256] = {
 #if 0
 	// RacconLad's MSX palette from his flash games
@@ -677,6 +677,66 @@ void app_handler(const wchar_t * expression,
    printf("Warning: path or string too long. Skipping.\n");
 }
 
+// using mainpal and a list of indexes, do a restricted search for closest color
+// no need for perceptual matching here, we already chose the color and are
+// really just checking for which brightness is closer
+int mapRGB(int r, int g, int b, int *lst, int cnt) {
+	double mindist = ((255*255)+(255*255)+(255*255));
+	int best = 0;
+	for (int i2=0; i2<cnt; i2++) {
+		int col = lst[i2];
+		int rd = r-mainpal[col].rgbRed;
+		int gd = g-mainpal[col].rgbGreen;
+		int bd = b-mainpal[col].rgbBlue;
+		double dist = (rd*rd)+(gd*gd)+(bd*bd);
+		if (dist < mindist) {
+			mindist = dist;
+			best = col;
+		}
+	}
+	return best;
+}
+
+enum {
+	CRED,CGREEN,CBLUE,CMAGENTA,CYELLOW,CCYAN,CGREY
+};
+// returns the closest index in mainpal[] that matches the assumed intent of this color
+// rgb must be 0-255. Return will be 0-14.
+// The palette order is mixed from the default (first 3):
+//  0- white,	  	 1- black,		 2- grey,		 3- med green,
+//  4- lt green,	 5- dk blue,	 6- lt blue,	 7- dk red,
+//  8- cyan,		 9- med red		10- lt red,		11- dk yellow,
+// 12- lt yellow,	13- dk green	14- magenta
+int getCartoonColor(int r, int g, int b) {
+	// first, calculate what color we think this is. Math determined by hand
+	// and verified with fixed and random samples - it's close enough.
+	int maxscore = 0, maxtype = CGREY;
+	int out = 1;
+	int score, mscore, yscore, cscore;
+
+	// the scoring is fairly basic, but seems to work
+	score = r*2-g-b;	if (score > maxscore) { maxscore = score; maxtype = CRED; }
+	score = g*2-r-b;	if (score > maxscore) { maxscore = score; maxtype = CGREEN; }
+	score = b*2-r-g;	if (score > maxscore) { maxscore = score; maxtype = CBLUE; }
+	mscore = (r+b)-g;	if (mscore > maxscore) { maxscore = mscore; maxtype = CMAGENTA; }
+	cscore = (g+b)-r;	if (cscore > maxscore) { maxscore = cscore; maxtype = CCYAN; }
+	yscore = (r+g)-b;	if (yscore > maxscore) { maxscore = yscore; maxtype = CYELLOW; }
+	// grey tends to score high on m,c and y, so use those
+	score = yscore*2-abs(yscore-mscore)-abs(yscore-cscore); if (score >= maxscore) { maxscore = score; maxtype = CGREY; }	
+
+	switch (maxtype) {
+		case CRED:		{	int lst[] = {7,9,10}; out=mapRGB(r,g,b, lst, 3); break;	}
+		case CGREEN:	{	int lst[] = {13,3,4}; out=mapRGB(r,g,b, lst, 3); break;	}
+		case CBLUE:		{	int lst[] = {5,6};    out=mapRGB(r,g,b, lst, 2); break;	}
+		case CMAGENTA:	{	out=14; break;	}
+		case CCYAN:		{	out=8; break;	}
+		case CYELLOW:	{	int lst[] = {11,12};  out=mapRGB(r,g,b, lst, 2); break;	}
+		case CGREY:		{	int lst[] = {1,2,0};  out=mapRGB(r,g,b, lst, 3); break;	}
+		// no default - cover all cases
+	}
+
+	return out;
+}
 
 // Mode 0 - pass in a path, random image from that path
 // Mode 1 - reload image - if pFile is NULL, use last from list, else use passed file
@@ -1021,25 +1081,26 @@ ohJustSkipTheLoad:
 
 		// scale the image (this is okay for TI Artist - nop!)
 		// Color reduce the image to the TI palette (this part does the most damage ;) )
-		memcpy(pal, palinit16, sizeof(pal));
+		printf("mainpal: %p, palinit16 %p, size %d\n", mainpal, palinit16, sizeof(mainpal));
+		memcpy(mainpal, palinit16, sizeof(mainpal));
 
 		// and if the palette needs to be grey... make it grey
 		if (g_GreyPalette) {
 			printf("Setting palette for black and white display...\n");
 			for (int idx=0; idx<256; ++idx) {
-				int x = (int)(pal[idx].rgbBlue*0.0722 + pal[idx].rgbGreen*0.7152 + pal[idx].rgbRed*0.2126);
+				int x = (int)(mainpal[idx].rgbBlue*0.0722 + mainpal[idx].rgbGreen*0.7152 + mainpal[idx].rgbRed*0.2126);
 				if (x > 255) x = 255;
-				pal[idx].rgbBlue = x;
-				pal[idx].rgbGreen = x;
-				pal[idx].rgbRed = x;
+				mainpal[idx].rgbBlue = x;
+				mainpal[idx].rgbGreen = x;
+				mainpal[idx].rgbRed = x;
 			}
 		}
 
 		for (int idx=0; idx<256; idx++) {
 			// reorder for the windows draw
-			winpal[idx].rgbBlue=pal[idx].rgbBlue;
-			winpal[idx].rgbRed=pal[idx].rgbRed;
-			winpal[idx].rgbGreen=pal[idx].rgbGreen;
+			winpal[idx].rgbBlue=mainpal[idx].rgbBlue;
+			winpal[idx].rgbRed=mainpal[idx].rgbRed;
+			winpal[idx].rgbGreen=mainpal[idx].rgbGreen;
 		}
 
 		// cache these values from ScalePic for the filename code
@@ -1107,82 +1168,57 @@ ohJustSkipTheLoad:
 			}
 
 			// color shift if not using palette
+			// TODO: why don't we want this in half multicolor? I guess we assume that we have more colors and don't need it?
 			if ((!g_UsePalette) && (!g_UseHalfMulticolor)) {
 				if (g_MaxColDiff > 0) {
 					// diff is 0-100% for how far we can shift towards a valid color
 					// max distance in color space is SQRT(255^2+255^2+255^2) = 441.673 units (so the 255 is kind of arbitrary)
-					const double maxrange = ((255*255)+(255*255)+(255*255))*(((double)g_MaxColDiff/100.0)*((double)g_MaxColDiff/100.0));		// scaled distance squared
+					const double maxrange = ((double)(255*255)+(255*255)+(255*255))*(((double)g_MaxColDiff/100.0)*((double)g_MaxColDiff/100.0));		// scaled distance squared
 					unsigned char *pWork = (unsigned char*)hBuffer2;
 					for (int idx=0; idx<256*192; idx++) {
 						int r = *(pWork);
 						int g = *(pWork+1);
 						int b = *(pWork+2);
-						double mindist = ((255*255)+(255*255)+(255*255));
+						double mindist = ((double)(255*255)+(255*255)+(255*255));
 						int best = 0;
-						for (int i2=0; i2<g_MatchColors; i2++) {
-							int rd = r-pal[i2].rgbRed;
-							int gd = g-pal[i2].rgbGreen;
-							int bd = b-pal[i2].rgbBlue;
-							double dist = (rd*rd)+(gd*gd)+(bd*bd);
-							if (dist < mindist) {
-								mindist = dist;
-								best = i2;
-							}
-						}
-#if 0
-						// old version - % is percent of entire color space
-						// we have a distance and a best color
-						if (mindist <= maxrange) {
-							// it's in range, just directly map it
-							r = pal[best].rgbRed;
-							g = pal[best].rgbGreen;
-							b = pal[best].rgbBlue;
+						if (g_Cartoon) {
+							// do a color restricted search for best match
+							best = getCartoonColor(r,g,b);	// uses mainpal[]
+							mindist = 0;
 						} else {
-							// not in range, so calculate a scale to move by
-							double scale = maxrange / mindist;	// x% ^2
-							scale = sqrt((double)scale);				// x% raw
-							double move = (pal[best].rgbRed - r) * scale;
-							if (move < 0) {
-								r += (int)(move - 0.5);
-							} else {
-								r += (int)(move + 0.5);
-							}
-							move = (pal[best].rgbGreen - g) * scale;
-							if (move < 0) {
-								g += (int)(move - 0.5);
-							} else {
-								g += (int)(move + 0.5);
-							}
-							move = (pal[best].rgbBlue - b) * scale;
-							if (move < 0) {
-								b += (int)(move - 0.5);
-							} else {
-								b += (int)(move + 0.5);
+							for (int i2=0; i2<g_MatchColors; i2++) {
+								const int rd = r-mainpal[i2].rgbRed;
+								const int gd = g-mainpal[i2].rgbGreen;
+								const int bd = b-mainpal[i2].rgbBlue;
+								double dist = ((double)rd*rd)+((double)gd*gd)+((double)bd*bd);
+								if (dist < mindist) {
+									mindist = dist;
+									best = i2;
+								}
 							}
 						}
-#else
+
 						// new version - percent is percentage of the distance to new color
 						double scale = g_MaxColDiff / 100.0;
-						double move = (pal[best].rgbRed - r) * scale;
+						double move = (mainpal[best].rgbRed - r) * scale;
 						if (move < 0) {
 							r += (int)(move - 0.5);
 						} else {
 							r += (int)(move + 0.5);
 						}
-						move = (pal[best].rgbGreen - g) * scale;
+						move = (mainpal[best].rgbGreen - g) * scale;
 						if (move < 0) {
 							g += (int)(move - 0.5);
 						} else {
 							g += (int)(move + 0.5);
 						}
-						move = (pal[best].rgbBlue - b) * scale;
+						move = (mainpal[best].rgbBlue - b) * scale;
 						if (move < 0) {
 							b += (int)(move - 0.5);
 						} else {
 							b += (int)(move + 0.5);
 						}
 
-#endif
 						*(pWork) = r;
 						*(pWork+1) = g;
 						*(pWork+2) = b;
@@ -1211,7 +1247,7 @@ ohJustSkipTheLoad:
 		}
 
 		debug(_T("Reducing colors...\n"));
-		MYRGBTo8BitDithered((unsigned char*)hBuffer2, buf8, pal, dark);
+		MYRGBTo8BitDithered((unsigned char*)hBuffer2, buf8, mainpal, dark);
 	}
 
 	debug(_T("\n"));

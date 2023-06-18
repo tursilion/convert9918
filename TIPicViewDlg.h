@@ -60,6 +60,7 @@ public:
 	afx_msg void OnBnClickedButton3();
 	afx_msg void OnBnClickedButton5();
 	afx_msg void OnBnClickedPercept();
+    afx_msg void OnBnClickedToon();
 	CComboBox m_ctrlList;
 	afx_msg void OnBnClickedReload();
 	afx_msg void OnCbnSelchangeCombo1();

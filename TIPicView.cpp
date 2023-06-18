@@ -76,6 +76,7 @@ int g_nFilter=4;
 int g_PowerPaint = 0;
 int g_nPortraitMode=0;
 int g_Perceptual=0;				// enable perceptual RGB color matching instead of YCrCb
+int g_Cartoon = 0;              // enable cartoon color matching
 int g_AccumulateErrors=1;		// accumulate errors instead of averaging (old method)
 int g_MaxMultiDiff=95;			// default percentage that we allow colors to differ luminence by (255=100%)
 int g_MaxColDiff=1;				// max color shift allowed (>15 is pretty pointless - percentage of color space)
@@ -309,6 +310,7 @@ void CTIPicViewApp::loadSettings() {
 	readint(g_PowerPaint,       _T("PowerPaint"));
 	readint(g_nPortraitMode,    _T("PortraitMode"));
 	readint(g_Perceptual,       _T("Perceptual"));
+    readint(g_Cartoon,          _T("Cartoon"));
 	readint(g_AccumulateErrors, _T("AccumulateErrors"));
 	readint(g_MaxMultiDiff,     _T("MaxMultiDiff"));
 	readint(g_MaxColDiff,       _T("MaxColDiff"));
@@ -356,6 +358,7 @@ void CTIPicViewApp::saveSettings() {
 	writeint(g_PowerPaint,          _T("PowerPaint"));
 	writeint(g_nPortraitMode,       _T("PortraitMode"));
 	writeint(g_Perceptual,          _T("Perceptual"));
+    writeint(g_Cartoon,             _T("Cartoon"));
 	writeint(g_AccumulateErrors,    _T("AccumulateErrors"));
 	writeint(g_MaxMultiDiff,        _T("MaxMultiDiff"));
 	writeint(g_MaxColDiff,          _T("MaxColDiff"));
