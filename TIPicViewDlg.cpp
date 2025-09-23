@@ -564,6 +564,7 @@ void CTIPicViewDlg::OnClose()
 unsigned char *CTIPicViewDlg::RLEEncode(unsigned char *pbuf, int *nSize, int InSize) {
 	int nOffset=0;
 	int nOutputSize=0;
+
 	unsigned char *pRet = (unsigned char*)malloc(InSize*2);	// worst case
 	while (nOffset < InSize) {
 		// decide whether to do a run or data
@@ -1030,7 +1031,7 @@ void CTIPicViewDlg::OnButton4()
 				break;
 
             case ftCVHGR:
-                // There's a fixed (for us) 15 byte header. I haven't
+                // There's a fixed (for us) 21 byte header. I haven't
                 // tried to figure out what the bytes mean, but they are the
                 // same in all examples.
                 fwrite("\x01\x00\x02\x6c\x6b\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", 1, 21, fP);
@@ -1405,6 +1406,74 @@ void CTIPicViewDlg::OnButton4()
 				}
 			}
 		}
+
+        // for RLE, pre-process the image for better compression
+        switch (dlg.m_pOFN->nFilterIndex) { 
+            case ftRLE:
+            case ftTIXBRLE:
+            case ftColecoROMRLE:
+                printf("RLE encode - remap color. Hold control to also do single pixel lossy\n");
+                // color table first
+                // if control is held, then disgard single pixel changes
+                if (GetAsyncKeyState(VK_CONTROL) & 0x8000) {
+                    printf("RLE - doing lossy pixel change.\n");
+                    for (int i=1; i<nOutputPSize; ++i) {
+                        int x = pbuf[i-1] ^ pbuf[i];
+                        if (x == 0) continue;   // no change
+                        int cnt = 0;
+                        for (int mask=1; mask<256; mask<<=1) {
+                            if (mask&x) {
+                                ++cnt;
+                                if (cnt > 1) break;
+                            }
+                        }
+                        if (cnt == 1) {
+							// we need to check, if color here doesn't match the previous
+							// we might need to copy the previous color
+							if ((pbuf[i]==0xff)||(pbuf[i]=0)) {
+								// we are adding a pixel or removing, so make a solid color
+								if (pbuf[i]==0xff) {
+									cbuf[i]=(cbuf[i]&0xf0)|(cbuf[i]>>4);
+								} else {
+									cbuf[i]=(cbuf[i]&0xf)|((cbuf[i]<<4)&0xf0);
+								}
+							} else if ((pbuf[i-1]==0xff)||(pbuf[i-1]=0)) {
+								// the previous one was solid, now it's not
+								if (pbuf[i-1] == 0xff) {
+									// we are removing one, so we need the background color
+									cbuf[i]=(cbuf[i]&0xf0)|(cbuf[i-1]&0x0f);
+								} else {
+									// we are adding one, so we need the foreground color
+									cbuf[i]=(cbuf[i-1]&0xf0)|(cbuf[i]&0x0f);
+								}
+							}
+                            // lossy update by 1 pixel
+                            pbuf[i] = pbuf[i-1];
+                        }
+                    }
+                }
+                if (fC) {
+                    for (int i=1; i<nOutputCSize; ++i) {
+                        int n = ((cbuf[i]>>4)&0xf)|((cbuf[i]<<4)&0xf0);
+                        if (cbuf[i-1] == n) {
+                            // colors were swapped, so swap away
+                            cbuf[i]=n;          // swapped color
+                            pbuf[i]=~pbuf[i];   // invert the pixels
+                        }
+						// check for solid color swap
+						if ((pbuf[i-1]==0xff)&&(pbuf[i]==0x00)) {
+							pbuf[i]=0xff;
+							cbuf[i]=(cbuf[i]&0xf)|((cbuf[i]&0xf)<<4);
+						}
+						if ((pbuf[i]==0xff)&&(pbuf[i-1]==0x00)) {
+							pbuf[i]=0x00;
+							cbuf[i]=(cbuf[i]&0xf0)|((cbuf[i]&0xf0)>>4);
+						}
+                    }
+                }
+                break;
+        }
+
 		// write out data
 		switch (dlg.m_pOFN->nFilterIndex) { 
 			case ftTIFILES: // tifiles
