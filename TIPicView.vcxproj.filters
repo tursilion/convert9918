@@ -79,6 +79,9 @@
     <ClInclude Include="ClipboardRead.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="quantize_common_optimized.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="res\TIPicView.ico">

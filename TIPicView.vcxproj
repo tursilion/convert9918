@@ -406,6 +406,7 @@
     <ClInclude Include="ClipboardRead.h" />
     <ClInclude Include="median_cut.h" />
     <ClInclude Include="quantize_common.h" />
+    <ClInclude Include="quantize_common_optimized.h" />
     <ClInclude Include="xbtest.h" />
     <ClInclude Include="2passscale.h" />
     <ClInclude Include="filters.h" />

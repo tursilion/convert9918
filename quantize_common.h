@@ -99,37 +99,71 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 				// only change the rest. 
 				// I tried keeping the 4 most DISTINCT colors per line, that was worse than this approach.
                 // * - not 4 anymore, user specified, and usually zero these days
-				memset(cols, 0, sizeof(cols));
+				memset(cols, 0, sizeof(cols));  // 4096 possible colors
 				for (row=0; row<192; row++) {
 					for (col=0; col<256; col++) {
 						// address of byte in the RGB image (3 bytes per pixel)
 						BYTE *pInLine = pRGB + (row*256*3) + (col*3);
-						// make a 12-bit color, rounding colors up
-						int idx= ((MakeRoundedRGB(*pInLine)&0xf0)<<4) |
-								 ((MakeRoundedRGB(*(pInLine+1)))&0xf0) |
-								 ((MakeRoundedRGB(*(pInLine+2))&0xf0)>>4);
+						// make a 12-bit color
+						int idx= ((MakeRoundedRGB(*pInLine)&0xf0)<<4) |     // R
+								 ((MakeRoundedRGB(*(pInLine+1)))&0xf0) |    // G
+								 ((MakeRoundedRGB(*(pInLine+2))&0xf0)>>4);  // B
 						cols[idx]++;
 					}
 				}
-
-				// now we've counted them, choose the top x
-				int top[16], topcnt[16];
-				for (int idx=0; idx<16; idx++) {
-					top[idx]=0;
-					topcnt[idx]=0;
-				}
-				for (int idx=0; idx<4096; idx++) {
-					if (cols[idx] > 0) nColCount++;		// just some stats since we're here
-
-					for (int idx2=0; idx2<16; idx2++) {
-						if (cols[idx] > topcnt[idx2]) {
-							top[idx2]=idx;
-							topcnt[idx2]=cols[idx];
-							break;
-						}
-					}
-				}
+                
+                nColCount = 0;
+				for (int color=0; color<4096; color++) {
+					if (cols[color] > 0) nColCount++;		// just some stats since we're here
+                }
 				debug(_T("%d relevant colors detected (%d%%).\n"), nColCount, nColCount*100/4096);
+
+				// now we've counted them, choose the top x (up to 16)
+                // cols has the number of pixels for each possible color combination
+				int top[4096], topcnt[4096];
+                int flagcon = 1;
+                int merged = 0;
+                while (flagcon) {
+                    // sort the colors
+                    memset(top, 0, sizeof(top));
+                    memset(topcnt, 0, sizeof(topcnt));
+				    for (int color=0; color<4096; color++) {
+                        // sort all 4096 colors
+					    for (int ranking=0; ranking<4096; ranking++) {
+						    if (cols[color] > topcnt[ranking]) {
+                                // shift down the other colors
+                                if (ranking < 4095) {
+                                    memmove(&top[ranking+1], &top[ranking], sizeof(int)*(4095-ranking));
+                                    memmove(&topcnt[ranking+1], &topcnt[ranking], sizeof(int)*(4095-ranking));
+                                }
+							    top[ranking]=color;
+							    topcnt[ranking]=cols[color];
+							    break;
+						    }
+					    }
+				    }
+
+                    // check if any of the colors are too close - within 111 of another in the top list
+                    // if so, add them together and recount
+                    flagcon = 0;
+                    for (int i1=0; i1<nFixedColors; ++i1) {
+                        for (int i2=i1+1; i2<nFixedColors; ++i2) {
+                            int diff = abs(top[i1]-top[i2]);
+                            if (((diff&0xf00)>0x100)||((diff&0xf0)>0x10)||((diff&0xf)>1)) {
+                                continue;
+                            }
+                            // diff is 111 or less per gun. add lessor to greater and zero lessor
+                            if (topcnt[i2] > 0) {
+                                // I don't think the whole palette can get stuck here, but checking 0 will solve that
+                                cols[top[i1]]+=cols[top[i2]];
+                                cols[top[i2]]=0;
+                                flagcon = 1;
+                                ++merged;
+                            }
+                        }
+                    }
+                }
+                printf("Merged %d colors...\n", merged);
 
 				// should have (up to) 15 colors sorted now, grab the top x (popularity)
 				for (int idx=0; idx<nFixedColors; idx++) {
@@ -419,10 +453,8 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 				}
 			}
 
-#if 0
-            // TODO: this makes it streaky!
             // Now that we selected a palette via true color, convert the palette to 12 bits
-            // so that we can dither the image correctly.
+            // so that we can dither the image correctly. (Streaking fixed)
             // Assuming a linear spread from 0.0 to 1.0 with 16 steps, then converted back to
             // 8 bits, the actual 12-bit palette values map back to 24-bit with each gun with the
             // least significant nibble zeroed, as long as you don't mind >F becomes >FF instead of >100
@@ -433,7 +465,6 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 				pal[idx][2]=MakeTrulyRoundedRGB(pal[idx][2]);
 				makeYUV(pal[idx][0], pal[idx][1], pal[idx][2], YUVpal[idx][0], YUVpal[idx][1], YUVpal[idx][2]);
 			}
-#endif
 
 			// save this entry off
 			memcpy(&scanlinepal[row], pal, sizeof(pal[0][0])*4*16); // 4 for RGB0, 16 for 16 colors
