@@ -59,6 +59,9 @@
 #define IDC_DIAG                        1040
 #define IDC_ORDERED3                    1041
 #define IDC_ORDERED4                    1042
+#define IDC_CHKREGION1                  1043
+#define IDC_CHKREGION2                  1044
+#define IDC_CHKREGION3                  1045
 
 // Next default values for new objects
 // 
@@ -66,7 +69,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        134
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1040
+#define _APS_NEXT_CONTROL_VALUE         1047
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -86,6 +86,12 @@ double g_PercepR=0.30, g_PercepG=0.52, g_PercepB=0.18;
 double g_LumaEmphasis = 1.2;		// much like the perceptual shifts, this emphasizes (or de-emphasizes if less than 1) the luma component
 double g_Gamma = 1.0;
 
+// For palette conversion, whether to consider each bitmap region for colors
+// controlled by check boxes on the right
+int g_region1=1;
+int g_region2=1;
+int g_region3=1;  
+
 extern unsigned char buf8[256*192];
 extern RGBQUAD winpal[256];
 extern CWnd *pWnd;

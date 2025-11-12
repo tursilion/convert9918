@@ -374,15 +374,19 @@ HGLOBAL ReadTIArtist(CString csFile) {
 	}
 
 	// not a valid header - hold control to assume it's a raw file
-	if (0 == (GetAsyncKeyState(VK_CONTROL) & 0x8000)) {
-		printf("No TIFILES or V9T9 header - hold CONTROL to load a RAW file\n");
-		fclose(fp);
-		return NULL;
-	}
-	// else, fseek back since the header doesn't exist
-	printf("Holding CONTROL overrides lack of header.\n");
-	fseek(fp, 0, SEEK_SET);
-	bHeader=false;
+    if (0 == (GetAsyncKeyState(VK_SHIFT) & 0x8000)) {
+    	if (0 == (GetAsyncKeyState(VK_CONTROL) & 0x8000)) {
+		    printf("No TIFILES or V9T9 header - hold CONTROL to load a RAW or SHIFT to ignore header\n");
+		    fclose(fp);
+		    return NULL;
+        } else {
+	        printf("Holding CONTROL overrides lack of header.\n");
+	        fseek(fp, 0, SEEK_SET);
+	        bHeader=false;
+        }
+	} else {
+        printf("Holding SHIFT assumes header is okay\n");
+    }
 
 test2:
 	pBuf=(unsigned char*)malloc(6144*3);

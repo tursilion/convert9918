@@ -30,7 +30,7 @@ struct LZW_STRING str[4096];
 HGLOBAL bmp;
 static struct {
 	char r, g, b;
-} pal[256];
+} gifpal[256];
 int image_x, image_y, image_w, image_h, x, y;
 int width, height, depth;
 int interlace, transparent;
@@ -122,9 +122,9 @@ void output_string(void)
 		if (string[i]>256) string[i]&=0xff;
 		if (transparent != string[i]) {
 			if ((unsigned)((y*width*3)+(x*3)+2) < nMaxBytes) {
-				((char*)bmp)[(y*width*3)+(x*3)]=pal[string[i]].r;
-				((char*)bmp)[(y*width*3)+(x*3)+1]=pal[string[i]].g;
-				((char*)bmp)[(y*width*3)+(x*3)+2]=pal[string[i]].b;
+				((char*)bmp)[(y*width*3)+(x*3)]=gifpal[string[i]].r;
+				((char*)bmp)[(y*width*3)+(x*3)+1]=gifpal[string[i]].g;
+				((char*)bmp)[(y*width*3)+(x*3)+2]=gifpal[string[i]].b;
 			}
 		}
 
@@ -226,13 +226,13 @@ HGLOBAL load_gif(wchar_t *filename, unsigned int *iWidth, unsigned int *iHeight)
 
 	fseek(f, 2, SEEK_CUR);	/* skip background colour and aspect ratio */
 
-	if(pal && depth) /* only read palette if pal and depth are not 0 */
+	if(gifpal && depth) /* only read gifpalette if gifpal and depth are not 0 */
 	{
 		for(i = 0; i < (1 << depth); i ++)
 		{
-			pal[i].r = (char)myfgetc(f);
-			pal[i].g = (char)myfgetc(f);
-			pal[i].b = (char)myfgetc(f);
+			gifpal[i].r = (char)myfgetc(f);
+			gifpal[i].g = (char)myfgetc(f);
+			gifpal[i].b = (char)myfgetc(f);
 		}
 	}
 	else
@@ -270,13 +270,13 @@ HGLOBAL load_gif(wchar_t *filename, unsigned int *iWidth, unsigned int *iHeight)
 				if(i & 128)
 				{
 					depth = (i & 7) + 1;
-					if(pal)
+					if(gifpal)
 					{
 						for(i = 0; i < (1 << depth); i ++)
 						{
-							pal[i].r = (char)myfgetc(f);
-							pal[i].g = (char)myfgetc(f);
-							pal[i].b =(char) myfgetc(f);
+							gifpal[i].r = (char)myfgetc(f);
+							gifpal[i].g = (char)myfgetc(f);
+							gifpal[i].b =(char) myfgetc(f);
 						}
 					}
 					else

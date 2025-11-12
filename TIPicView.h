@@ -76,7 +76,8 @@ void debug(wchar_t *s, ...);
 
 // This macro basically reduces to 4 bits of accuracy, but rounds up and shifts back to the 8-bit RGB range (so high nibble only)
 // Try the Sometimes99er method of doubling up the nibble - no rounding (much better)
-#define MakeRoundedRGB(x) (((x)&0xf0)|((x>>4)&0xf))
+// Both macros do the same thing.
+#define MakeRoundedRGB(x)      (((x)&0xf0)|((x>>4)&0xf))
 #define MakeTrulyRoundedRGB(x) (((x)&0xf0)|((x>>4)&0xf))
 
 /////////////////////////////////////////////////////////////////////////////

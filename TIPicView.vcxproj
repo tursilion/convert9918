@@ -431,7 +431,6 @@
     <None Include="readme.md" />
     <None Include="res\TIPicView.ico" />
     <None Include="res\TIPicView.rc2" />
-    <None Include="ReadMe.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

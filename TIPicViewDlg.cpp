@@ -41,6 +41,7 @@ extern int g_MatchColors;
 extern bool g_bStaticByPopularity;
 extern int g_OrderedDither;
 extern int g_MapSize;
+extern int g_region1, g_region2, g_region3;
 extern unsigned char scanlinepal[192][16][4];
 extern double g_PercepR, g_PercepG, g_PercepB;
 extern double g_LumaEmphasis;
@@ -434,7 +435,7 @@ void CTIPicViewDlg::OnPaint()
 
 		if (NULL != buf8) {
 			int dpi = GetDpiForWindow(GetSafeHwnd());
-			IS40_StretchDraw8Bit(dc, buf8, 256, 192, 256, winpal, DPIFIX(XOFFSET), DPIFIX(0), DPIFIX(256*2), DPIFIX(192*2));
+            IS40_StretchDraw8Bit(dc, buf8, 256, 192, 256, winpal, DPIFIX(XOFFSET), DPIFIX(0), DPIFIX(256*2), DPIFIX(192*2));
 		}
 		CDialog::OnPaint();
 	}
@@ -2294,6 +2295,31 @@ void CTIPicViewDlg::PrepareData()
 		}
 	}
 
+	pCtrl=(CButton*)GetDlgItem(IDC_CHKREGION1);
+	if (pCtrl) {
+		if (g_region1) {
+			pCtrl->SetCheck(BST_CHECKED);
+		} else {
+			pCtrl->SetCheck(BST_UNCHECKED);
+		}
+	}
+	pCtrl=(CButton*)GetDlgItem(IDC_CHKREGION2);
+	if (pCtrl) {
+		if (g_region2) {
+			pCtrl->SetCheck(BST_CHECKED);
+		} else {
+			pCtrl->SetCheck(BST_UNCHECKED);
+		}
+	}
+	pCtrl=(CButton*)GetDlgItem(IDC_CHKREGION3);
+	if (pCtrl) {
+		if (g_region3) {
+			pCtrl->SetCheck(BST_CHECKED);
+		} else {
+			pCtrl->SetCheck(BST_UNCHECKED);
+		}
+	}
+
     UpdateData(false);
 }
 
@@ -2500,6 +2526,32 @@ void CTIPicViewDlg::CollectData()
 			m_Popularity = 1;
 		}
 	}
+
+    pBtn=(CButton*)GetDlgItem(IDC_CHKREGION1);
+    if (pBtn) {
+        if (pBtn->GetCheck() == BST_CHECKED) {
+            g_region1 = 1;
+        } else {
+            g_region1 = 0;
+        }
+    }
+    pBtn=(CButton*)GetDlgItem(IDC_CHKREGION2);
+    if (pBtn) {
+        if (pBtn->GetCheck() == BST_CHECKED) {
+            g_region2 = 1;
+        } else {
+            g_region2 = 0;
+        }
+    }
+    pBtn=(CButton*)GetDlgItem(IDC_CHKREGION3);
+    if (pBtn) {
+        if (pBtn->GetCheck() == BST_CHECKED) {
+            g_region3 = 1;
+        } else {
+            g_region3 = 0;
+        }
+    }
+
 	UpdateData(true);
 }
 

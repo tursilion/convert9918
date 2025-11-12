@@ -5,6 +5,7 @@ extern bool fVerbose;
 extern MYRGBQUAD palinit16[256];
 extern double g_thresholdMap2x2[2][2];
 extern double g_thresholdMap4x4[4][4];
+extern int g_region1,g_region2,g_region3;
 
 // macro to change the masking for the threshold map
 #define MAPSEEK(x) (x)&maskval
@@ -101,6 +102,17 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
                 // * - not 4 anymore, user specified, and usually zero these days
 				memset(cols, 0, sizeof(cols));  // 4096 possible colors
 				for (row=0; row<192; row++) {
+                    // check if we should skip this region
+                    if ((row == 0) && (g_region1 == 0)) {
+                        row = 63;
+                        continue;
+                    } else if ((row == 64) && (g_region2 == 0)) {
+                        row = 127;
+                        continue;
+                    } else if ((row == 128) && (g_region3 == 0)) {
+                        break;
+                    }
+
 					for (col=0; col<256; col++) {
 						// address of byte in the RGB image (3 bytes per pixel)
 						BYTE *pInLine = pRGB + (row*256*3) + (col*3);
@@ -108,7 +120,25 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 						int idx= ((MakeRoundedRGB(*pInLine)&0xf0)<<4) |     // R
 								 ((MakeRoundedRGB(*(pInLine+1)))&0xf0) |    // G
 								 ((MakeRoundedRGB(*(pInLine+2))&0xf0)>>4);  // B
+#if 0
+                        // all screen the same
 						cols[idx]++;
+#else
+                        // center weight higher
+                        int x = col/32;     // make a section 0-7. 0=1,12=2,34=3,56=2,7=1
+                        switch (x) {
+                            case 0:
+                            case 7:
+                                cols[idx]++;
+                                break;
+                            case 3:
+                            case 4:
+                                cols[idx]+=3;
+                                break;
+                            default:
+                                cols[idx]+=2;
+                        }
+#endif
 					}
 				}
                 
@@ -144,12 +174,16 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 				    }
 
                     // check if any of the colors are too close - within 111 of another in the top list
-                    // if so, add them together and recount
+                    // if so, add them together and recount. This is very close to what we do for
+                    // scanline palette selection, and it works pretty well here too, better than
+                    // median for most images (though it does better on a few)
                     flagcon = 0;
                     for (int i1=0; i1<nFixedColors; ++i1) {
                         for (int i2=i1+1; i2<nFixedColors; ++i2) {
-                            int diff = abs(top[i1]-top[i2]);
-                            if (((diff&0xf00)>0x100)||((diff&0xf0)>0x10)||((diff&0xf)>1)) {
+                            int rdiff = abs( ((top[i1]>>8)&0x0f) - ((top[i2]>>8)&0x0f) );
+                            int gdiff = abs( ((top[i1]>>4)&0x0f) - ((top[i2]>>4)&0x0f) );
+                            int bdiff = abs( ((top[i1])&0x0f) - ((top[i2])&0x0f) );
+                            if ((rdiff > 1)||(gdiff > 1)||(bdiff > 1)) {
                                 continue;
                             }
                             // diff is 111 or less per gun. add lessor to greater and zero lessor
@@ -167,11 +201,13 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 
 				// should have (up to) 15 colors sorted now, grab the top x (popularity)
 				for (int idx=0; idx<nFixedColors; idx++) {
-					pal[idx+1][0]=(((top[idx]&0xf00)>>8)<<4)+8;		// +8 to center the color in the middle of the range (0x?0 - 0x?F)
-					pal[idx+1][1]=(((top[idx]&0xf0)>>4)<<4)+8;
-					pal[idx+1][2]=(((top[idx]&0xf))<<4)+8;
+                    // duplicate the nibble
+					pal[idx][0]=MakeRoundedRGB((top[idx]&0xf00)>>4);  // make 0xR0 -> 0xRR
+					pal[idx][1]=MakeRoundedRGB(top[idx]&0xf0);        // make 0xG0 -> 0xGG
+					pal[idx][2]=MakeRoundedRGB((top[idx]&0x0f)<<4);   // make 0xB0 -> 0xBB
+                    printf("%d: %02X%02X%02X\n", idx, pal[idx][0],pal[idx][1],pal[idx][2]);
 
-					makeYUV(pal[idx+1][0], pal[idx+1][1], pal[idx+1][2], YUVpal[idx+1][0], YUVpal[idx+1][1], YUVpal[idx+1][2]);
+					makeYUV(pal[idx][0], pal[idx][1], pal[idx][2], YUVpal[idx][0], YUVpal[idx][1], YUVpal[idx][2]);
 				}
 			} else {
 				debug(_T("Preserving %d top colors (median cut)\n"), nFixedColors);
@@ -186,6 +222,17 @@ void quantize_common(BYTE* pRGB, BYTE* p8Bit, double darkenval, int mapSize) {
 				for (int idx=0; idx<256*192*3; idx++) {
 					*(pTmp++)>>=4;
 				}
+                // black out the areas we were told to ignore. This means black gets a little
+                // unfair empahasis, but that's usually okay
+                if (g_region1 == 0) {
+                    memset(pWork, 0, 64*256*3);
+                }
+                if (g_region2 == 0) {
+                    memset(pWork+64*256*3, 0, 64*256*3);
+                }
+                if (g_region3 == 0) {
+                    memset(pWork+128*256*3, 0, 64*256*3);
+                }
 				std::list<Point> newpal = medianCut((Point*)pWork, 256*192, nFixedColors);
 				free(pWork);
 				// copy the returned palette back as fixed colors
